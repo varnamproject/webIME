@@ -74,15 +74,15 @@ class TributeEvents {
     let element = this;
     instance.commandEvent = false;
 
-    if (event.keyCode >= 48 && event.keyCode <= 57) {
+    if (event.keyCode >= 49 && event.keyCode <= 57) {
       // numeric keys
-      const suggestionIndex = event.keyCode - 48
+      const suggestionIndex = event.keyCode - 49 // 49 is key 1
 
       instance.commandEvent = true;
       instance.callbacks()['numeric'](event, suggestionIndex);
-    } if (event.keyCode >= 96 && event.keyCode <= 105) {
+    } if (event.keyCode >= 97 && event.keyCode <= 105) {
       // numpad keys
-      const suggestionIndex = event.keyCode - 96
+      const suggestionIndex = event.keyCode - 97  // 97 is key 1
 
       instance.commandEvent = true;
       instance.callbacks()['numeric'](event, suggestionIndex);
@@ -327,7 +327,7 @@ class TributeEvents {
       },
       left: (e, el) => {
         // navigate previous page
-        if (e.shiftKey && this.tribute.isActive && this.tribute.current.filteredItems) {
+        if (e.shiftKey && !e.ctrlKey && !e.metaKey && !e.altKey && this.tribute.isActive && this.tribute.current.filteredItems) {
           e.preventDefault();
           e.stopPropagation();
           this.tribute.previousPage();
@@ -335,7 +335,7 @@ class TributeEvents {
       },
       right: (e, el) => {
         // navigate next page
-        if (e.shiftKey && this.tribute.isActive && this.tribute.current.filteredItems) {
+        if (e.shiftKey && !e.ctrlKey && !e.metaKey && !e.altKey && this.tribute.isActive && this.tribute.current.filteredItems) {
           e.preventDefault();
           e.stopPropagation();
           this.tribute.nextPage();

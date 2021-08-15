@@ -139,15 +139,15 @@ class TributeEvents {
     let element = this;
     instance.commandEvent = false;
 
-    if (event.keyCode >= 48 && event.keyCode <= 57) {
+    if (event.keyCode >= 49 && event.keyCode <= 57) {
       // numeric keys
-      const suggestionIndex = event.keyCode - 48;
+      const suggestionIndex = event.keyCode - 49; // 49 is key 1
 
       instance.commandEvent = true;
       instance.callbacks()['numeric'](event, suggestionIndex);
-    } if (event.keyCode >= 96 && event.keyCode <= 105) {
+    } if (event.keyCode >= 97 && event.keyCode <= 105) {
       // numpad keys
-      const suggestionIndex = event.keyCode - 96;
+      const suggestionIndex = event.keyCode - 97;  // 97 is key 1
 
       instance.commandEvent = true;
       instance.callbacks()['numeric'](event, suggestionIndex);
@@ -391,7 +391,7 @@ class TributeEvents {
       },
       left: (e, el) => {
         // navigate previous page
-        if (e.shiftKey && this.tribute.isActive && this.tribute.current.filteredItems) {
+        if (e.shiftKey && !e.ctrlKey && !e.metaKey && !e.altKey && this.tribute.isActive && this.tribute.current.filteredItems) {
           e.preventDefault();
           e.stopPropagation();
           this.tribute.previousPage();
@@ -399,7 +399,7 @@ class TributeEvents {
       },
       right: (e, el) => {
         // navigate next page
-        if (e.shiftKey && this.tribute.isActive && this.tribute.current.filteredItems) {
+        if (e.shiftKey && !e.ctrlKey && !e.metaKey && !e.altKey && this.tribute.isActive && this.tribute.current.filteredItems) {
           e.preventDefault();
           e.stopPropagation();
           this.tribute.nextPage();
@@ -1461,7 +1461,7 @@ class Tribute {
     searchOpts = {},
     menuItemLimit = null,
     menuShowMinLength = 0,
-    menuPageLimit = 10,
+    menuPageLimit = 9,
   }) {
     this.autocompleteMode = autocompleteMode;
     this.autocompleteSeparator = autocompleteSeparator;
@@ -1776,7 +1776,7 @@ class Tribute {
         page.push(item);
         pageItemIndex++;
 
-        if (pageItemIndex + 1 == this.current.collection.menuPageLimit) {
+        if (pageItemIndex == this.current.collection.menuPageLimit) {
           pages.push(page);
           page = [];
           pageItemIndex = 0;
@@ -1847,7 +1847,7 @@ class Tribute {
       if (this.menuSelected === index) {
         li.classList.add(this.current.collection.selectClass);
       }
-      li.innerHTML = `<div class="index">${index}:</div><div class="suggestion">` + this.current.collection.menuItemTemplate(item) + `</div>`;
+      li.innerHTML = `<div class="index">${index + 1}:</div><div class="suggestion">` + this.current.collection.menuItemTemplate(item) + `</div>`;
       fragment.appendChild(li);
     }
     ul.appendChild(fragment);

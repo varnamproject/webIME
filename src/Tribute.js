@@ -31,7 +31,7 @@ class Tribute {
     searchOpts = {},
     menuItemLimit = null,
     menuShowMinLength = 0,
-    menuPageLimit = 10,
+    menuPageLimit = 9,
   }) {
     this.autocompleteMode = autocompleteMode;
     this.autocompleteSeparator = autocompleteSeparator;
@@ -346,7 +346,7 @@ class Tribute {
         page.push(item);
         pageItemIndex++;
 
-        if (pageItemIndex + 1 == this.current.collection.menuPageLimit) {
+        if (pageItemIndex == this.current.collection.menuPageLimit) {
           pages.push(page);
           page = [];
           pageItemIndex = 0;
@@ -417,7 +417,7 @@ class Tribute {
       if (this.menuSelected === index) {
         li.classList.add(this.current.collection.selectClass);
       }
-      li.innerHTML = `<div class="index">${index}:</div><div class="suggestion">` + this.current.collection.menuItemTemplate(item) + `</div>`;
+      li.innerHTML = `<div class="index">${index + 1}:</div><div class="suggestion">` + this.current.collection.menuItemTemplate(item) + `</div>`;
       fragment.appendChild(li);
     }
     ul.appendChild(fragment);

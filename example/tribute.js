@@ -186,16 +186,18 @@
         var element = this;
         instance.commandEvent = false;
 
-        if (event.keyCode >= 48 && event.keyCode <= 57) {
+        if (event.keyCode >= 49 && event.keyCode <= 57) {
           // numeric keys
-          var suggestionIndex = event.keyCode - 48;
+          var suggestionIndex = event.keyCode - 49; // 49 is key 1
+
           instance.commandEvent = true;
           instance.callbacks()['numeric'](event, suggestionIndex);
         }
 
-        if (event.keyCode >= 96 && event.keyCode <= 105) {
+        if (event.keyCode >= 97 && event.keyCode <= 105) {
           // numpad keys
-          var _suggestionIndex = event.keyCode - 96;
+          var _suggestionIndex = event.keyCode - 97; // 97 is key 1
+
 
           instance.commandEvent = true;
           instance.callbacks()['numeric'](event, _suggestionIndex);
@@ -435,7 +437,7 @@
           },
           left: function left(e, el) {
             // navigate previous page
-            if (e.shiftKey && _this.tribute.isActive && _this.tribute.current.filteredItems) {
+            if (e.shiftKey && !e.ctrlKey && !e.metaKey && !e.altKey && _this.tribute.isActive && _this.tribute.current.filteredItems) {
               e.preventDefault();
               e.stopPropagation();
 
@@ -444,7 +446,7 @@
           },
           right: function right(e, el) {
             // navigate next page
-            if (e.shiftKey && _this.tribute.isActive && _this.tribute.current.filteredItems) {
+            if (e.shiftKey && !e.ctrlKey && !e.metaKey && !e.altKey && _this.tribute.isActive && _this.tribute.current.filteredItems) {
               e.preventDefault();
               e.stopPropagation();
 
@@ -907,6 +909,71 @@
         return text;
       }
     }, {
+      key: "getTextOfCurrentWord",
+      value: function getTextOfCurrentWord() {
+        var context = this.tribute.current,
+            text = '',
+            start = 0,
+            end = 0;
+        var stopCharacters = [' ', '\n', '\r', '\t', ',', '.'];
+
+        if (!this.isContentEditable(context.element)) {
+          var textComponent = this.tribute.current.element;
+
+          if (textComponent) {
+            if (textComponent.value) {
+              var inputText = textComponent.value;
+              end = textComponent.selectionEnd;
+              var textBeforeCursor = inputText.substr(0, end);
+              var indexOfDelimiter = -1;
+              var idx, d;
+
+              for (var i = 0; i < stopCharacters.length; i++) {
+                d = stopCharacters[i];
+                idx = textBeforeCursor.lastIndexOf(d);
+
+                if (idx > indexOfDelimiter) {
+                  indexOfDelimiter = idx;
+                }
+              }
+
+              while (end < inputText.length) {
+                if (stopCharacters.indexOf(inputText[end]) === -1) {
+                  ++end;
+                } else {
+                  break;
+                }
+              }
+
+              if (indexOfDelimiter < 0) {
+                start = 0;
+              } else {
+                start = indexOfDelimiter + 1;
+              }
+
+              text = inputText.substring(start, end);
+            }
+          }
+        } else {
+          var selectedElem = this.getWindowSelection().anchorNode;
+
+          if (selectedElem != null) {
+            var workingNodeContent = selectedElem.textContent;
+            var selectStartOffset = this.getWindowSelection().getRangeAt(0).startOffset;
+
+            if (workingNodeContent && selectStartOffset >= 0) {
+              text = workingNodeContent.substring(0, selectStartOffset);
+            }
+          }
+        }
+
+        return {
+          start: start,
+          end: end,
+          text: text
+        };
+      }
+    }, {
       key: "getLastWordInText",
       value: function getLastWordInText(text) {
         var wordsArray;
@@ -940,18 +1007,22 @@
           }
         }
 
-        var effectiveRange = this.getTextPrecedingCurrentSelection();
-        var lastWordOfEffectiveRange = this.getLastWordInText(effectiveRange);
+        var _this$getTextOfCurren = this.getTextOfCurrentWord(),
+            start = _this$getTextOfCurren.start,
+            end = _this$getTextOfCurren.end,
+            text = _this$getTextOfCurren.text;
 
         if (isAutocomplete) {
           return {
-            mentionPosition: effectiveRange.length - lastWordOfEffectiveRange.length,
-            mentionText: lastWordOfEffectiveRange,
+            mentionPosition: start,
+            mentionText: text,
             mentionSelectedElement: selected,
             mentionSelectedPath: path,
             mentionSelectedOffset: offset
           };
         }
+
+        var effectiveRange = this.getTextPrecedingCurrentSelection();
 
         if (effectiveRange !== undefined && effectiveRange !== null) {
           var mostRecentTriggerCharPos = -1;
@@ -1473,7 +1544,7 @@
           _ref$menuShowMinLengt = _ref.menuShowMinLength,
           menuShowMinLength = _ref$menuShowMinLengt === void 0 ? 0 : _ref$menuShowMinLengt,
           _ref$menuPageLimit = _ref.menuPageLimit,
-          menuPageLimit = _ref$menuPageLimit === void 0 ? 10 : _ref$menuPageLimit;
+          menuPageLimit = _ref$menuPageLimit === void 0 ? 9 : _ref$menuPageLimit;
 
       _classCallCheck(this, Tribute);
 
@@ -1716,7 +1787,7 @@
             page.push(item);
             pageItemIndex++;
 
-            if (pageItemIndex + 1 == _this2.current.collection.menuPageLimit) {
+            if (pageItemIndex == _this2.current.collection.menuPageLimit) {
               pages.push(page);
               page = [];
               pageItemIndex = 0;
@@ -1789,7 +1860,7 @@
             li.classList.add(this.current.collection.selectClass);
           }
 
-          li.innerHTML = "<div class=\"index\">".concat(index, ":</div><div class=\"suggestion\">") + this.current.collection.menuItemTemplate(item) + "</div>";
+          li.innerHTML = "<div class=\"index\">".concat(index + 1, ":</div><div class=\"suggestion\">") + this.current.collection.menuItemTemplate(item) + "</div>";
           fragment.appendChild(li);
         }
 

@@ -21,7 +21,6 @@
 .tribute-container li {
   color: #4a4a4a;
   display: block;
-  line-height: 1.5;
   cursor: pointer;
 }
 .tribute-container li.highlight {
