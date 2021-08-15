@@ -1,3 +1,5 @@
+
+(function(l, r) { if (l.getElementById('livereloadscript')) return; r = l.createElement('script'); r.async = 1; r.src = '//' + (window.location.host || 'localhost').split(':')[0] + ':35729/livereload.js?snipver=1'; r.id = 'livereloadscript'; l.head.appendChild(r) })(window.document);
 (function (global, factory) {
   typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
   typeof define === 'function' && define.amd ? define(factory) :
@@ -83,33 +85,50 @@
   }
 
   if (!Array.prototype.find) {
-    Array.prototype.find = function (predicate) {
-      if (this === null) {
-        throw new TypeError('Array.prototype.find called on null or undefined');
-      }
-
-      if (typeof predicate !== 'function') {
-        throw new TypeError('predicate must be a function');
-      }
-
-      var list = Object(this);
-      var length = list.length >>> 0;
-      var thisArg = arguments[1];
-      var value;
-
-      for (var i = 0; i < length; i++) {
-        value = list[i];
-
-        if (predicate.call(thisArg, value, i, list)) {
-          return value;
+    Object.defineProperty(Array.prototype, 'find', {
+      value: function value(predicate) {
+        // 1. Let O be ? ToObject(this value).
+        if (this == null) {
+          throw TypeError('"this" is null or not defined');
         }
-      }
 
-      return undefined;
-    };
+        var o = Object(this); // 2. Let len be ? ToLength(? Get(O, "length")).
+
+        var len = o.length >>> 0; // 3. If IsCallable(predicate) is false, throw a TypeError exception.
+
+        if (typeof predicate !== 'function') {
+          throw TypeError('predicate must be a function');
+        } // 4. If thisArg was supplied, let T be thisArg; else let T be undefined.
+
+
+        var thisArg = arguments[1]; // 5. Let k be 0.
+
+        var k = 0; // 6. Repeat, while k < len
+
+        while (k < len) {
+          // a. Let Pk be ! ToString(k).
+          // b. Let kValue be ? Get(O, Pk).
+          // c. Let testResult be ToBoolean(? Call(predicate, T, « kValue, k, O »)).
+          // d. If testResult is true, return kValue.
+          var kValue = o[k];
+
+          if (predicate.call(thisArg, kValue, k, o)) {
+            return kValue;
+          } // e. Increase k by 1.
+
+
+          k++;
+        } // 7. Return undefined.
+
+
+        return undefined;
+      },
+      configurable: true,
+      writable: true
+    });
   }
 
-  if (window && typeof window.CustomEvent !== "function") {
+  if (typeof window !== 'undefined' && typeof window.CustomEvent !== "function") {
     var CustomEvent$1 = function CustomEvent(event, params) {
       params = params || {
         bubbles: false,
@@ -142,16 +161,16 @@
         element.boundKeydown = this.keydown.bind(element, this);
         element.boundKeyup = this.keyup.bind(element, this);
         element.boundInput = this.input.bind(element, this);
-        element.addEventListener("keydown", element.boundKeydown, false);
-        element.addEventListener("keyup", element.boundKeyup, false);
-        element.addEventListener("input", element.boundInput, false);
+        element.addEventListener("keydown", element.boundKeydown, true);
+        element.addEventListener("keyup", element.boundKeyup, true);
+        element.addEventListener("input", element.boundInput, true);
       }
     }, {
       key: "unbind",
       value: function unbind(element) {
-        element.removeEventListener("keydown", element.boundKeydown, false);
-        element.removeEventListener("keyup", element.boundKeyup, false);
-        element.removeEventListener("input", element.boundInput, false);
+        element.removeEventListener("keydown", element.boundKeydown, true);
+        element.removeEventListener("keyup", element.boundKeyup, true);
+        element.removeEventListener("input", element.boundInput, true);
         delete element.boundKeydown;
         delete element.boundKeyup;
         delete element.boundInput;
@@ -166,12 +185,28 @@
 
         var element = this;
         instance.commandEvent = false;
-        TributeEvents.keys().forEach(function (o) {
-          if (o.key === event.keyCode) {
-            instance.commandEvent = true;
-            instance.callbacks()[o.value.toLowerCase()](event, element);
-          }
-        });
+
+        if (event.keyCode >= 48 && event.keyCode <= 57) {
+          // numeric keys
+          var suggestionIndex = event.keyCode - 48;
+          instance.commandEvent = true;
+          instance.callbacks()['numeric'](event, suggestionIndex);
+        }
+
+        if (event.keyCode >= 96 && event.keyCode <= 105) {
+          // numpad keys
+          var _suggestionIndex = event.keyCode - 96;
+
+          instance.commandEvent = true;
+          instance.callbacks()['numeric'](event, _suggestionIndex);
+        } else {
+          TributeEvents.keys().forEach(function (o) {
+            if (o.key === event.keyCode) {
+              instance.commandEvent = true;
+              instance.callbacks()[o.value.toLowerCase()](event, element);
+            }
+          });
+        }
       }
     }, {
       key: "input",
@@ -185,20 +220,30 @@
         var tribute = instance.tribute;
 
         if (tribute.menu && tribute.menu.contains(event.target)) {
-          var li = event.target;
-          event.preventDefault();
-          event.stopPropagation();
-
-          while (li.nodeName.toLowerCase() !== "li") {
-            li = li.parentNode;
-
-            if (!li || li === tribute.menu) {
-              throw new Error("cannot find the <li> container for the click");
+          if (event.target.parentNode.className === "pager") {
+            if (event.target.id === "webime-previous") {
+              tribute.previousPage();
+            } else if (event.target.id === "webime-next") {
+              tribute.nextPage();
             }
-          }
+          } else {
+            var li = event.target;
+            event.preventDefault();
+            event.stopPropagation();
 
-          tribute.selectItemAtIndex(li.getAttribute("data-index"), event);
-          tribute.hideMenu(); // TODO: should fire with externalTrigger and target is outside of menu
+            while (li.nodeName.toLowerCase() !== "li") {
+              li = li.parentNode;
+
+              if (!li || li === tribute.menu) {
+                // throw new Error("cannot find the <li> container for the click");
+                return;
+              }
+            }
+
+            tribute.selectItemAtIndex(li.getAttribute("data-index"), event);
+            tribute.hideMenu();
+          } // TODO: should fire with externalTrigger and target is outside of menu
+
         } else if (tribute.current.element && !tribute.current.externalTrigger) {
           tribute.current.externalTrigger = false;
           setTimeout(function () {
@@ -386,11 +431,41 @@
               }
             }
           },
+          left: function left(e, el) {
+            // navigate previous page
+            if (e.shiftKey && _this.tribute.isActive && _this.tribute.current.filteredItems) {
+              e.preventDefault();
+              e.stopPropagation();
+
+              _this.tribute.previousPage();
+            }
+          },
+          right: function right(e, el) {
+            // navigate next page
+            if (e.shiftKey && _this.tribute.isActive && _this.tribute.current.filteredItems) {
+              e.preventDefault();
+              e.stopPropagation();
+
+              _this.tribute.nextPage();
+            }
+          },
           "delete": function _delete(e, el) {
             if (_this.tribute.isActive && _this.tribute.current.mentionText.length < 1) {
               _this.tribute.hideMenu();
             } else if (_this.tribute.isActive) {
               _this.tribute.showMenuFor(el);
+            }
+          },
+          numeric: function numeric(e, index) {
+            // choose selection
+            if (_this.tribute.isActive && _this.tribute.current.filteredItems) {
+              e.preventDefault();
+              e.stopPropagation();
+              setTimeout(function () {
+                _this.tribute.selectItemAtIndex(index, e);
+
+                _this.tribute.hideMenu();
+              }, 0);
             }
           }
         };
@@ -459,6 +534,12 @@
         }, {
           key: 40,
           value: "DOWN"
+        }, {
+          key: 37,
+          value: "LEFT"
+        }, {
+          key: 39,
+          value: "RIGHT"
         }];
       }
     }]);
@@ -826,8 +907,6 @@
     }, {
       key: "getLastWordInText",
       value: function getLastWordInText(text) {
-        text = text.replace(/\u00A0/g, ' '); // https://stackoverflow.com/questions/29850407/how-do-i-replace-unicode-character-u00a0-with-a-space-in-javascript
-
         var wordsArray;
 
         if (this.tribute.autocompleteSeparator) {
@@ -836,8 +915,8 @@
           wordsArray = text.split(/\s+/);
         }
 
-        var worldsCount = wordsArray.length - 1;
-        return wordsArray[worldsCount].trim();
+        var wordsCount = wordsArray.length - 1;
+        return wordsArray[wordsCount];
       }
     }, {
       key: "getTriggerInfo",
@@ -886,7 +965,7 @@
             }
           });
 
-          if (mostRecentTriggerCharPos >= 0 && (mostRecentTriggerCharPos === 0 || !requireLeadingSpace || /[\xA0\s]/g.test(effectiveRange.substring(mostRecentTriggerCharPos - 1, mostRecentTriggerCharPos)))) {
+          if (mostRecentTriggerCharPos >= 0 && (mostRecentTriggerCharPos === 0 || !requireLeadingSpace || /\s/.test(effectiveRange.substring(mostRecentTriggerCharPos - 1, mostRecentTriggerCharPos)))) {
             var currentTriggerSnippet = effectiveRange.substring(mostRecentTriggerCharPos + triggerChar.length, effectiveRange.length);
             triggerChar = effectiveRange.substring(mostRecentTriggerCharPos, mostRecentTriggerCharPos + triggerChar.length);
             var firstSnippetChar = currentTriggerSnippet.substring(0, 1);
@@ -1390,7 +1469,9 @@
           _ref$menuItemLimit = _ref.menuItemLimit,
           menuItemLimit = _ref$menuItemLimit === void 0 ? null : _ref$menuItemLimit,
           _ref$menuShowMinLengt = _ref.menuShowMinLength,
-          menuShowMinLength = _ref$menuShowMinLengt === void 0 ? 0 : _ref$menuShowMinLengt;
+          menuShowMinLength = _ref$menuShowMinLengt === void 0 ? 0 : _ref$menuShowMinLengt,
+          _ref$menuPageLimit = _ref.menuPageLimit,
+          menuPageLimit = _ref$menuPageLimit === void 0 ? 10 : _ref$menuPageLimit;
 
       _classCallCheck(this, Tribute);
 
@@ -1406,6 +1487,8 @@
       this.positionMenu = positionMenu;
       this.hasTrailingSpace = false;
       this.spaceSelectsMatch = spaceSelectsMatch;
+      this.pages = [];
+      this.currentPage = 0;
 
       if (this.autocompleteMode) {
         trigger = "";
@@ -1454,7 +1537,8 @@
           requireLeadingSpace: requireLeadingSpace,
           searchOpts: searchOpts,
           menuItemLimit: menuItemLimit,
-          menuShowMinLength: menuShowMinLength
+          menuShowMinLength: menuShowMinLength,
+          menuPageLimit: menuPageLimit
         }];
       } else if (collection) {
         if (this.autocompleteMode) console.warn("Tribute in autocomplete mode does not work for collections");
@@ -1489,7 +1573,8 @@
             requireLeadingSpace: item.requireLeadingSpace,
             searchOpts: item.searchOpts || searchOpts,
             menuItemLimit: item.menuItemLimit || menuItemLimit,
-            menuShowMinLength: item.menuShowMinLength || menuShowMinLength
+            menuShowMinLength: item.menuShowMinLength || menuShowMinLength,
+            menuPageLimit: item.menuPageLimit || menuPageLimit
           };
         });
       } else {
@@ -1547,10 +1632,8 @@
       key: "ensureEditable",
       value: function ensureEditable(element) {
         if (Tribute.inputTypes().indexOf(element.nodeName) === -1) {
-          if (element.contentEditable) {
-            element.contentEditable = true;
-          } else {
-            throw new Error("[Tribute] Cannot bind to " + element.nodeName);
+          if (!element.contentEditable) {
+            throw new Error("[Tribute] Cannot bind to " + element.nodeName + ", not contentEditable");
           }
         }
       }
@@ -1561,6 +1644,10 @@
             ul = this.range.getDocument().createElement("ul");
         wrapper.className = containerClass;
         wrapper.appendChild(ul);
+        var pager = this.range.getDocument().createElement("div");
+        pager.className = "pager";
+        pager.innerHTML = "<span id='webime-previous'>&lt;</span><span id='webime-shift'>Shift +</span><span id='webime-next'>&gt;</span>";
+        wrapper.appendChild(pager);
 
         if (this.menuContainer) {
           return this.menuContainer.appendChild(wrapper);
@@ -1588,6 +1675,8 @@
 
         this.isActive = true;
         this.menuSelected = 0;
+        this.pages = [];
+        this.currentPage = 0; // Reset to first page
 
         if (!this.current.mentionText) {
           this.current.mentionText = "";
@@ -1618,56 +1707,26 @@
             items = items.slice(0, _this2.current.collection.menuItemLimit);
           }
 
-          _this2.current.filteredItems = items;
-
-          var ul = _this2.menu.querySelector("ul");
-
-          _this2.range.positionMenuAtCaret(scrollTo);
-
-          if (!items.length) {
-            var noMatchEvent = new CustomEvent("tribute-no-match", {
-              detail: _this2.menu
-            });
-
-            _this2.current.element.dispatchEvent(noMatchEvent);
-
-            if (typeof _this2.current.collection.noMatchTemplate === "function" && !_this2.current.collection.noMatchTemplate() || !_this2.current.collection.noMatchTemplate) {
-              _this2.hideMenu();
-            } else {
-              typeof _this2.current.collection.noMatchTemplate === "function" ? ul.innerHTML = _this2.current.collection.noMatchTemplate() : ul.innerHTML = _this2.current.collection.noMatchTemplate;
-            }
-
-            return;
-          }
-
-          ul.innerHTML = "";
-
-          var fragment = _this2.range.getDocument().createDocumentFragment();
-
+          var pages = [];
+          var page = [],
+              pageItemIndex = 0;
           items.forEach(function (item, index) {
-            var li = _this2.range.getDocument().createElement("li");
+            page.push(item);
+            pageItemIndex++;
 
-            li.setAttribute("data-index", index);
-            li.className = _this2.current.collection.itemClass;
-            li.addEventListener("mousemove", function (e) {
-              var _this2$_findLiTarget = _this2._findLiTarget(e.target),
-                  _this2$_findLiTarget2 = _slicedToArray(_this2$_findLiTarget, 2),
-                  li = _this2$_findLiTarget2[0],
-                  index = _this2$_findLiTarget2[1];
-
-              if (e.movementY !== 0) {
-                _this2.events.setActiveLi(index);
-              }
-            });
-
-            if (_this2.menuSelected === index) {
-              li.classList.add(_this2.current.collection.selectClass);
+            if (pageItemIndex + 1 == _this2.current.collection.menuPageLimit) {
+              pages.push(page);
+              page = [];
+              pageItemIndex = 0;
+            } else if (index + 1 == items.length) {
+              // Last item
+              pages.push(page);
             }
-
-            li.innerHTML = _this2.current.collection.menuItemTemplate(item);
-            fragment.appendChild(li);
           });
-          ul.appendChild(fragment);
+          _this2.pages = pages;
+          _this2.currentPage = 0; // Reset to first page
+
+          _this2.makePage();
         };
 
         if (typeof this.current.collection.values === "function") {
@@ -1679,6 +1738,106 @@
           this.current.collection.values(this.current.mentionText, processValues);
         } else {
           processValues(this.current.collection.values);
+        }
+      }
+    }, {
+      key: "makeList",
+      value: function makeList(items) {
+        var _this3 = this;
+
+        this.current.filteredItems = items;
+        var ul = this.menu.querySelector("ul");
+        this.range.positionMenuAtCaret(scrollTo);
+
+        if (!items.length) {
+          var noMatchEvent = new CustomEvent("tribute-no-match", {
+            detail: this.menu
+          });
+          this.current.element.dispatchEvent(noMatchEvent);
+
+          if (typeof this.current.collection.noMatchTemplate === "function" && !this.current.collection.noMatchTemplate() || !this.current.collection.noMatchTemplate) {
+            this.hideMenu();
+          } else {
+            typeof this.current.collection.noMatchTemplate === "function" ? ul.innerHTML = this.current.collection.noMatchTemplate() : ul.innerHTML = this.current.collection.noMatchTemplate;
+          }
+
+          return;
+        }
+
+        ul.innerHTML = "";
+        var fragment = this.range.getDocument().createDocumentFragment();
+
+        for (var index = 0; index < items.length; index++) {
+          var item = items[index];
+          var li = this.range.getDocument().createElement("li");
+          li.setAttribute("data-index", index);
+          li.className = this.current.collection.itemClass;
+          li.addEventListener("mousemove", function (e) {
+            var _this3$_findLiTarget = _this3._findLiTarget(e.target),
+                _this3$_findLiTarget2 = _slicedToArray(_this3$_findLiTarget, 2),
+                li = _this3$_findLiTarget2[0],
+                index = _this3$_findLiTarget2[1];
+
+            if (e.movementY !== 0) {
+              _this3.events.setActiveLi(index);
+            }
+          });
+
+          if (this.menuSelected === index) {
+            li.classList.add(this.current.collection.selectClass);
+          }
+
+          li.innerHTML = "<div class=\"index\">".concat(index, ":</div><div class=\"suggestion\">") + this.current.collection.menuItemTemplate(item) + "</div>";
+          fragment.appendChild(li);
+        }
+
+        ul.appendChild(fragment);
+      } // Make current page
+
+    }, {
+      key: "makePage",
+      value: function makePage() {
+        if (!this.pages[this.currentPage]) {
+          return;
+        }
+
+        this.makeList(this.pages[this.currentPage]);
+        var pager = this.menu.getElementsByClassName("pager")[0];
+        var previousButton = pager.querySelector("#webime-previous");
+        var nextButton = pager.querySelector("#webime-next");
+
+        if (this.currentPage === 0) {
+          previousButton.classList.add("hidden");
+        } else {
+          previousButton.classList.remove("hidden");
+        }
+
+        if (this.currentPage + 1 >= this.pages.length) {
+          nextButton.classList.add("hidden");
+        } else {
+          nextButton.classList.remove("hidden");
+        }
+
+        if (this.currentPage === 0 && this.pages.length == 1) {
+          pager.classList.add("hidden");
+        } else {
+          pager.classList.remove("hidden");
+        }
+      }
+    }, {
+      key: "previousPage",
+      value: function previousPage() {
+        if (this.currentPage - 1 >= 0) {
+          this.currentPage--;
+          this.makePage();
+        }
+      }
+    }, {
+      key: "nextPage",
+      value: function nextPage() {
+        if (this.pages.length > this.currentPage + 1) {
+          this.currentPage++;
+          this.makePage();
         }
       }
     }, {
@@ -1758,6 +1917,8 @@
           this.menu.style.cssText = "display: none;";
           this.isActive = false;
           this.menuSelected = 0;
+          this.pages = [];
+          this.currentPage = 0;
           this.current = {};
         }
       }
@@ -1830,7 +1991,7 @@
     }, {
       key: "_detach",
       value: function _detach(el) {
-        var _this3 = this;
+        var _this4 = this;
 
         this.events.unbind(el);
 
@@ -1840,7 +2001,7 @@
 
         setTimeout(function () {
           el.removeAttribute("data-tribute");
-          _this3.isActive = false;
+          _this4.isActive = false;
 
           if (el.tributeMenu) {
             el.tributeMenu.remove();

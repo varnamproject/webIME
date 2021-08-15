@@ -1,8 +1,8 @@
-# Tribute
+# WebIME
 
-[![CDNJS version](https://img.shields.io/cdnjs/v/tributejs.svg)](https://cdnjs.com/libraries/tributejs) [![Build Status](https://travis-ci.org/zurb/tribute.svg?branch=master)](https://travis-ci.org/zurb/tribute)
+A cross-browser input method engine written in ES6, no dependencies. Tested in Firefox, Chrome, iOS Safari, Safari, IE 9+, Edge 12+, Android 4+, and Windows Phone.
 
-A cross-browser `@mention` engine written in ES6, no dependencies. Tested in Firefox, Chrome, iOS Safari, Safari, IE 9+, Edge 12+, Android 4+, and Windows Phone.
+This is a fork of [TributeJS](https://github.com/zurb/tribute) specifically for developing browser based IME. Inspired by IBus engine on GNU/Linux.
 
 - [Installing](#installing)
 - [Initializing](#initializing)
@@ -510,3 +510,7 @@ Ember – [ember-tribute](https://github.com/MalayaliRobz/ember-tribute) by **Ma
 [ZURB](https://zurb.com), the creators of [Helio](https://helio.app)
 
 Design successful products by rapidly revealing key user behaviors. [Helio](https://helio.app) makes it easy to get reactions on your designs quickly so your team can focus on solving the right problems, right now.
+
+Forked [TributeJS](https://github.com/zurb/tribute) on August 15th, 2021 at 5d63790f1b552dd308d0ed2e70f3da42f9bc2e92 (Jun 16).
+
+Further changes are licensed under LGPL-3.0-or-later.

@@ -29,7 +29,8 @@ class Tribute {
     spaceSelectsMatch = false,
     searchOpts = {},
     menuItemLimit = null,
-    menuShowMinLength = 0
+    menuShowMinLength = 0,
+    menuPageLimit = 10,
   }) {
     this.autocompleteMode = autocompleteMode;
     this.autocompleteSeparator = autocompleteSeparator;
@@ -43,6 +44,8 @@ class Tribute {
     this.positionMenu = positionMenu;
     this.hasTrailingSpace = false;
     this.spaceSelectsMatch = spaceSelectsMatch;
+    this.pages = [];
+    this.currentPage = 0;
 
     if (this.autocompleteMode) {
       trigger = "";
@@ -113,7 +116,9 @@ class Tribute {
 
           menuItemLimit: menuItemLimit,
 
-          menuShowMinLength: menuShowMinLength
+          menuShowMinLength: menuShowMinLength,
+
+          menuPageLimit: menuPageLimit
         }
       ];
     } else if (collection) {
@@ -158,7 +163,8 @@ class Tribute {
           requireLeadingSpace: item.requireLeadingSpace,
           searchOpts: item.searchOpts || searchOpts,
           menuItemLimit: item.menuItemLimit || menuItemLimit,
-          menuShowMinLength: item.menuShowMinLength || menuShowMinLength
+          menuShowMinLength: item.menuShowMinLength || menuShowMinLength,
+          menuPageLimit: item.menuPageLimit || menuPageLimit
         };
       });
     } else {
@@ -266,6 +272,11 @@ class Tribute {
     wrapper.className = containerClass;
     wrapper.appendChild(ul);
 
+    const pager = this.range.getDocument().createElement("div");
+    pager.className = "pager";
+    pager.innerHTML = "<span id='webime-previous'>&lt;</span><span id='webime-shift'>Shift +</span><span id='webime-next'>&gt;</span>";
+    wrapper.appendChild(pager);
+
     if (this.menuContainer) {
       return this.menuContainer.appendChild(wrapper);
     }
@@ -293,6 +304,8 @@ class Tribute {
 
     this.isActive = true;
     this.menuSelected = 0;
+    this.pages = [];
+    this.currentPage = 0; // Reset to first page
 
     if (!this.current.mentionText) {
       this.current.mentionText = "";
@@ -325,52 +338,25 @@ class Tribute {
         items = items.slice(0, this.current.collection.menuItemLimit);
       }
 
-      this.current.filteredItems = items;
-
-      let ul = this.menu.querySelector("ul");
-
-      this.range.positionMenuAtCaret(scrollTo);
-
-      if (!items.length) {
-        let noMatchEvent = new CustomEvent("tribute-no-match", {
-          detail: this.menu
-        });
-        this.current.element.dispatchEvent(noMatchEvent);
-        if (
-          (typeof this.current.collection.noMatchTemplate === "function" &&
-            !this.current.collection.noMatchTemplate()) ||
-          !this.current.collection.noMatchTemplate
-        ) {
-          this.hideMenu();
-        } else {
-          typeof this.current.collection.noMatchTemplate === "function"
-            ? (ul.innerHTML = this.current.collection.noMatchTemplate())
-            : (ul.innerHTML = this.current.collection.noMatchTemplate);
-        }
-
-        return;
-      }
-
-      ul.innerHTML = "";
-      let fragment = this.range.getDocument().createDocumentFragment();
-
+      const pages = [];
+      let page = [],
+          pageItemIndex = 0;
       items.forEach((item, index) => {
-        let li = this.range.getDocument().createElement("li");
-        li.setAttribute("data-index", index);
-        li.className = this.current.collection.itemClass;
-        li.addEventListener("mousemove", e => {
-          let [li, index] = this._findLiTarget(e.target);
-          if (e.movementY !== 0) {
-            this.events.setActiveLi(index);
-          }
-        });
-        if (this.menuSelected === index) {
-          li.classList.add(this.current.collection.selectClass);
+        page.push(item);
+        pageItemIndex++;
+
+        if (pageItemIndex + 1 == this.current.collection.menuPageLimit) {
+          pages.push(page);
+          page = [];
+          pageItemIndex = 0;
+        } else if (index + 1 == items.length) {
+          // Last item
+          pages.push(page);
         }
-        li.innerHTML = this.current.collection.menuItemTemplate(item);
-        fragment.appendChild(li);
       });
-      ul.appendChild(fragment);
+      this.pages = pages;
+      this.currentPage = 0; // Reset to first page
+      this.makePage();
     };
 
     if (typeof this.current.collection.values === "function") {
@@ -382,6 +368,101 @@ class Tribute {
       this.current.collection.values(this.current.mentionText, processValues);
     } else {
       processValues(this.current.collection.values);
+    }
+  }
+
+  makeList (items) {
+    this.current.filteredItems = items;
+
+    let ul = this.menu.querySelector("ul");
+
+    this.range.positionMenuAtCaret(scrollTo);
+
+    if (!items.length) {
+      let noMatchEvent = new CustomEvent("tribute-no-match", {
+        detail: this.menu
+      });
+      this.current.element.dispatchEvent(noMatchEvent);
+      if (
+        (typeof this.current.collection.noMatchTemplate === "function" &&
+          !this.current.collection.noMatchTemplate()) ||
+        !this.current.collection.noMatchTemplate
+      ) {
+        this.hideMenu();
+      } else {
+        typeof this.current.collection.noMatchTemplate === "function"
+          ? (ul.innerHTML = this.current.collection.noMatchTemplate())
+          : (ul.innerHTML = this.current.collection.noMatchTemplate);
+      }
+
+      return;
+    }
+
+    ul.innerHTML = "";
+    let fragment = this.range.getDocument().createDocumentFragment();
+
+    for (let index = 0; index < items.length; index++) {
+      const item = items[index];
+
+      let li = this.range.getDocument().createElement("li");
+      li.setAttribute("data-index", index);
+      li.className = this.current.collection.itemClass;
+      li.addEventListener("mousemove", e => {
+        let [li, index] = this._findLiTarget(e.target);
+        if (e.movementY !== 0) {
+          this.events.setActiveLi(index);
+        }
+      });
+      if (this.menuSelected === index) {
+        li.classList.add(this.current.collection.selectClass);
+      }
+      li.innerHTML = `<div class="index">${index}:</div><div class="suggestion">` + this.current.collection.menuItemTemplate(item) + `</div>`;
+      fragment.appendChild(li);
+    }
+    ul.appendChild(fragment);
+  }
+
+  // Make current page
+  makePage () {
+    if (!this.pages[this.currentPage]) {
+      return;
+    }
+    this.makeList(this.pages[this.currentPage]);
+
+    const pager = this.menu.getElementsByClassName("pager")[0]
+    const previousButton = pager.querySelector("#webime-previous");
+    const nextButton = pager.querySelector("#webime-next");
+
+    if (this.currentPage === 0) {
+      previousButton.classList.add("hidden");
+    } else {
+      previousButton.classList.remove("hidden");
+    }
+
+    if (this.currentPage + 1 >= this.pages.length) {
+      nextButton.classList.add("hidden");
+    } else {
+      nextButton.classList.remove("hidden");
+    }
+
+    if (this.currentPage === 0 && this.pages.length == 1) {
+      pager.classList.add("hidden");
+    } else {
+      pager.classList.remove("hidden");
+    }
+  }
+
+  previousPage() {
+    if (this.currentPage-1 >= 0) {
+      this.currentPage--;
+      this.makePage();
+    }
+  }
+
+  nextPage() {
+    if (this.pages.length > this.currentPage+1) {
+      this.currentPage++;
+      this.makePage();
     }
   }
 
@@ -465,6 +546,8 @@ class Tribute {
       this.menu.style.cssText = "display: none;";
       this.isActive = false;
       this.menuSelected = 0;
+      this.pages = [];
+      this.currentPage = 0;
       this.current = {};
     }
   }

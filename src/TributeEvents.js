@@ -33,6 +33,14 @@ class TributeEvents {
       {
         key: 40,
         value: "DOWN"
+      },
+      {
+        key: 37,
+        value: "LEFT"
+      },
+      {
+        key: 39,
+        value: "RIGHT"
       }
     ];
   }
@@ -66,12 +74,26 @@ class TributeEvents {
     let element = this;
     instance.commandEvent = false;
 
-    TributeEvents.keys().forEach(o => {
-      if (o.key === event.keyCode) {
-        instance.commandEvent = true;
-        instance.callbacks()[o.value.toLowerCase()](event, element);
-      }
-    });
+    if (event.keyCode >= 48 && event.keyCode <= 57) {
+      // numeric keys
+      const suggestionIndex = event.keyCode - 48
+
+      instance.commandEvent = true;
+      instance.callbacks()['numeric'](event, suggestionIndex);
+    } if (event.keyCode >= 96 && event.keyCode <= 105) {
+      // numpad keys
+      const suggestionIndex = event.keyCode - 96
+
+      instance.commandEvent = true;
+      instance.callbacks()['numeric'](event, suggestionIndex);
+    } else {
+      TributeEvents.keys().forEach(o => {
+        if (o.key === event.keyCode) {
+          instance.commandEvent = true;
+          instance.callbacks()[o.value.toLowerCase()](event, element);
+        }
+      });
+    }
   }
 
   input(instance, event) {
@@ -82,17 +104,26 @@ class TributeEvents {
   click(instance, event) {
     let tribute = instance.tribute;
     if (tribute.menu && tribute.menu.contains(event.target)) {
-      let li = event.target;
-      event.preventDefault();
-      event.stopPropagation();
-      while (li.nodeName.toLowerCase() !== "li") {
-        li = li.parentNode;
-        if (!li || li === tribute.menu) {
-          throw new Error("cannot find the <li> container for the click");
+      if (event.target.parentNode.className === "pager") {
+        if (event.target.id === "webime-previous") {
+          tribute.previousPage();
+        } else if (event.target.id === "webime-next") {
+          tribute.nextPage();
         }
+      } else {
+        let li = event.target;
+        event.preventDefault();
+        event.stopPropagation();
+        while (li.nodeName.toLowerCase() !== "li") {
+          li = li.parentNode;
+          if (!li || li === tribute.menu) {
+            // throw new Error("cannot find the <li> container for the click");
+            return;
+          }
+        }
+        tribute.selectItemAtIndex(li.getAttribute("data-index"), event);
+        tribute.hideMenu();
       }
-      tribute.selectItemAtIndex(li.getAttribute("data-index"), event);
-      tribute.hideMenu();
 
       // TODO: should fire with externalTrigger and target is outside of menu
     } else if (tribute.current.element && !tribute.current.externalTrigger) {
@@ -293,6 +324,22 @@ class TributeEvents {
           }
         }
       },
+      left: (e, el) => {
+        // navigate previous page
+        if (e.shiftKey && this.tribute.isActive && this.tribute.current.filteredItems) {
+          e.preventDefault();
+          e.stopPropagation();
+          this.tribute.previousPage();
+        }
+      },
+      right: (e, el) => {
+        // navigate next page
+        if (e.shiftKey && this.tribute.isActive && this.tribute.current.filteredItems) {
+          e.preventDefault();
+          e.stopPropagation();
+          this.tribute.nextPage();
+        }
+      },
       delete: (e, el) => {
         if (
           this.tribute.isActive &&
@@ -301,6 +348,17 @@ class TributeEvents {
           this.tribute.hideMenu();
         } else if (this.tribute.isActive) {
           this.tribute.showMenuFor(el);
+        }
+      },
+      numeric: (e, index) => {
+        // choose selection
+        if (this.tribute.isActive && this.tribute.current.filteredItems) {
+          e.preventDefault();
+          e.stopPropagation();
+          setTimeout(() => {
+            this.tribute.selectItemAtIndex(index, e);
+            this.tribute.hideMenu();
+          }, 0);
         }
       }
     };

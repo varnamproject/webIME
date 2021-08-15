@@ -1,27 +1,50 @@
 if (!Array.prototype.find) {
-    Array.prototype.find = function(predicate) {
-        if (this === null) {
-            throw new TypeError('Array.prototype.find called on null or undefined')
-        }
-        if (typeof predicate !== 'function') {
-            throw new TypeError('predicate must be a function')
-        }
-        var list = Object(this);
-        var length = list.length >>> 0;
-        var thisArg = arguments[1];
-        var value;
+  Object.defineProperty(Array.prototype, 'find', {
+    value: function(predicate) {
+      // 1. Let O be ? ToObject(this value).
+      if (this == null) {
+        throw TypeError('"this" is null or not defined');
+      }
 
-        for (var i = 0; i < length; i++) {
-            value = list[i];
-            if (predicate.call(thisArg, value, i, list)) {
-                return value
-            }
+      var o = Object(this);
+
+      // 2. Let len be ? ToLength(? Get(O, "length")).
+      var len = o.length >>> 0;
+
+      // 3. If IsCallable(predicate) is false, throw a TypeError exception.
+      if (typeof predicate !== 'function') {
+        throw TypeError('predicate must be a function');
+      }
+
+      // 4. If thisArg was supplied, let T be thisArg; else let T be undefined.
+      var thisArg = arguments[1];
+
+      // 5. Let k be 0.
+      var k = 0;
+
+      // 6. Repeat, while k < len
+      while (k < len) {
+        // a. Let Pk be ! ToString(k).
+        // b. Let kValue be ? Get(O, Pk).
+        // c. Let testResult be ToBoolean(? Call(predicate, T, « kValue, k, O »)).
+        // d. If testResult is true, return kValue.
+        var kValue = o[k];
+        if (predicate.call(thisArg, kValue, k, o)) {
+          return kValue;
         }
-        return undefined
-    };
+        // e. Increase k by 1.
+        k++;
+      }
+
+      // 7. Return undefined.
+      return undefined;
+    },
+    configurable: true,
+    writable: true
+  });
 }
 
-if (window && typeof window.CustomEvent !== "function") {
+if (typeof window !== 'undefined' && typeof window.CustomEvent !== "function") {
   function CustomEvent$1(event, params) {
     params = params || {
       bubbles: false,
@@ -75,6 +98,14 @@ class TributeEvents {
       {
         key: 40,
         value: "DOWN"
+      },
+      {
+        key: 37,
+        value: "LEFT"
+      },
+      {
+        key: 39,
+        value: "RIGHT"
       }
     ];
   }
@@ -84,15 +115,15 @@ class TributeEvents {
     element.boundKeyup = this.keyup.bind(element, this);
     element.boundInput = this.input.bind(element, this);
 
-    element.addEventListener("keydown", element.boundKeydown, false);
-    element.addEventListener("keyup", element.boundKeyup, false);
-    element.addEventListener("input", element.boundInput, false);
+    element.addEventListener("keydown", element.boundKeydown, true);
+    element.addEventListener("keyup", element.boundKeyup, true);
+    element.addEventListener("input", element.boundInput, true);
   }
 
   unbind(element) {
-    element.removeEventListener("keydown", element.boundKeydown, false);
-    element.removeEventListener("keyup", element.boundKeyup, false);
-    element.removeEventListener("input", element.boundInput, false);
+    element.removeEventListener("keydown", element.boundKeydown, true);
+    element.removeEventListener("keyup", element.boundKeyup, true);
+    element.removeEventListener("input", element.boundInput, true);
 
     delete element.boundKeydown;
     delete element.boundKeyup;
@@ -108,12 +139,26 @@ class TributeEvents {
     let element = this;
     instance.commandEvent = false;
 
-    TributeEvents.keys().forEach(o => {
-      if (o.key === event.keyCode) {
-        instance.commandEvent = true;
-        instance.callbacks()[o.value.toLowerCase()](event, element);
-      }
-    });
+    if (event.keyCode >= 48 && event.keyCode <= 57) {
+      // numeric keys
+      const suggestionIndex = event.keyCode - 48;
+
+      instance.commandEvent = true;
+      instance.callbacks()['numeric'](event, suggestionIndex);
+    } if (event.keyCode >= 96 && event.keyCode <= 105) {
+      // numpad keys
+      const suggestionIndex = event.keyCode - 96;
+
+      instance.commandEvent = true;
+      instance.callbacks()['numeric'](event, suggestionIndex);
+    } else {
+      TributeEvents.keys().forEach(o => {
+        if (o.key === event.keyCode) {
+          instance.commandEvent = true;
+          instance.callbacks()[o.value.toLowerCase()](event, element);
+        }
+      });
+    }
   }
 
   input(instance, event) {
@@ -124,17 +169,26 @@ class TributeEvents {
   click(instance, event) {
     let tribute = instance.tribute;
     if (tribute.menu && tribute.menu.contains(event.target)) {
-      let li = event.target;
-      event.preventDefault();
-      event.stopPropagation();
-      while (li.nodeName.toLowerCase() !== "li") {
-        li = li.parentNode;
-        if (!li || li === tribute.menu) {
-          throw new Error("cannot find the <li> container for the click");
+      if (event.target.parentNode.className === "pager") {
+        if (event.target.id === "webime-previous") {
+          tribute.previousPage();
+        } else if (event.target.id === "webime-next") {
+          tribute.nextPage();
         }
+      } else {
+        let li = event.target;
+        event.preventDefault();
+        event.stopPropagation();
+        while (li.nodeName.toLowerCase() !== "li") {
+          li = li.parentNode;
+          if (!li || li === tribute.menu) {
+            // throw new Error("cannot find the <li> container for the click");
+            return;
+          }
+        }
+        tribute.selectItemAtIndex(li.getAttribute("data-index"), event);
+        tribute.hideMenu();
       }
-      tribute.selectItemAtIndex(li.getAttribute("data-index"), event);
-      tribute.hideMenu();
 
       // TODO: should fire with externalTrigger and target is outside of menu
     } else if (tribute.current.element && !tribute.current.externalTrigger) {
@@ -334,6 +388,22 @@ class TributeEvents {
           }
         }
       },
+      left: (e, el) => {
+        // navigate previous page
+        if (e.shiftKey && this.tribute.isActive && this.tribute.current.filteredItems) {
+          e.preventDefault();
+          e.stopPropagation();
+          this.tribute.previousPage();
+        }
+      },
+      right: (e, el) => {
+        // navigate next page
+        if (e.shiftKey && this.tribute.isActive && this.tribute.current.filteredItems) {
+          e.preventDefault();
+          e.stopPropagation();
+          this.tribute.nextPage();
+        }
+      },
       delete: (e, el) => {
         if (
           this.tribute.isActive &&
@@ -342,6 +412,17 @@ class TributeEvents {
           this.tribute.hideMenu();
         } else if (this.tribute.isActive) {
           this.tribute.showMenuFor(el);
+        }
+      },
+      numeric: (e, index) => {
+        // choose selection
+        if (this.tribute.isActive && this.tribute.current.filteredItems) {
+          e.preventDefault();
+          e.stopPropagation();
+          setTimeout(() => {
+            this.tribute.selectItemAtIndex(index, e);
+            this.tribute.hideMenu();
+          }, 0);
         }
       }
     };
@@ -747,15 +828,14 @@ class TributeRange {
     }
 
     getLastWordInText(text) {
-        text = text.replace(/\u00A0/g, ' '); // https://stackoverflow.com/questions/29850407/how-do-i-replace-unicode-character-u00a0-with-a-space-in-javascript
         var wordsArray;
         if (this.tribute.autocompleteSeparator) {
             wordsArray = text.split(this.tribute.autocompleteSeparator);
         } else {
             wordsArray = text.split(/\s+/);
         }
-        var worldsCount = wordsArray.length - 1;
-        return wordsArray[worldsCount].trim();
+        var wordsCount = wordsArray.length - 1;
+        return wordsArray[wordsCount];
     }
 
     getTriggerInfo(menuAlreadyActive, hasTrailingSpace, requireLeadingSpace, allowSpaces, isAutocomplete) {
@@ -808,7 +888,7 @@ class TributeRange {
                 (
                     mostRecentTriggerCharPos === 0 ||
                     !requireLeadingSpace ||
-                    /[\xA0\s]/g.test(
+                    /\s/.test(
                         effectiveRange.substring(
                             mostRecentTriggerCharPos - 1,
                             mostRecentTriggerCharPos)
@@ -1317,7 +1397,8 @@ class Tribute {
     spaceSelectsMatch = false,
     searchOpts = {},
     menuItemLimit = null,
-    menuShowMinLength = 0
+    menuShowMinLength = 0,
+    menuPageLimit = 10,
   }) {
     this.autocompleteMode = autocompleteMode;
     this.autocompleteSeparator = autocompleteSeparator;
@@ -1331,6 +1412,8 @@ class Tribute {
     this.positionMenu = positionMenu;
     this.hasTrailingSpace = false;
     this.spaceSelectsMatch = spaceSelectsMatch;
+    this.pages = [];
+    this.currentPage = 0;
 
     if (this.autocompleteMode) {
       trigger = "";
@@ -1401,7 +1484,9 @@ class Tribute {
 
           menuItemLimit: menuItemLimit,
 
-          menuShowMinLength: menuShowMinLength
+          menuShowMinLength: menuShowMinLength,
+
+          menuPageLimit: menuPageLimit
         }
       ];
     } else if (collection) {
@@ -1446,7 +1531,8 @@ class Tribute {
           requireLeadingSpace: item.requireLeadingSpace,
           searchOpts: item.searchOpts || searchOpts,
           menuItemLimit: item.menuItemLimit || menuItemLimit,
-          menuShowMinLength: item.menuShowMinLength || menuShowMinLength
+          menuShowMinLength: item.menuShowMinLength || menuShowMinLength,
+          menuPageLimit: item.menuPageLimit || menuPageLimit
         };
       });
     } else {
@@ -1542,10 +1628,8 @@ class Tribute {
 
   ensureEditable(element) {
     if (Tribute.inputTypes().indexOf(element.nodeName) === -1) {
-      if (element.contentEditable) {
-        element.contentEditable = true;
-      } else {
-        throw new Error("[Tribute] Cannot bind to " + element.nodeName);
+      if (!element.contentEditable) {
+        throw new Error("[Tribute] Cannot bind to " + element.nodeName + ", not contentEditable");
       }
     }
   }
@@ -1555,6 +1639,11 @@ class Tribute {
       ul = this.range.getDocument().createElement("ul");
     wrapper.className = containerClass;
     wrapper.appendChild(ul);
+
+    const pager = this.range.getDocument().createElement("div");
+    pager.className = "pager";
+    pager.innerHTML = "<span id='webime-previous'>&lt;</span><span id='webime-shift'>Shift +</span><span id='webime-next'>&gt;</span>";
+    wrapper.appendChild(pager);
 
     if (this.menuContainer) {
       return this.menuContainer.appendChild(wrapper);
@@ -1583,6 +1672,8 @@ class Tribute {
 
     this.isActive = true;
     this.menuSelected = 0;
+    this.pages = [];
+    this.currentPage = 0; // Reset to first page
 
     if (!this.current.mentionText) {
       this.current.mentionText = "";
@@ -1615,52 +1706,25 @@ class Tribute {
         items = items.slice(0, this.current.collection.menuItemLimit);
       }
 
-      this.current.filteredItems = items;
-
-      let ul = this.menu.querySelector("ul");
-
-      this.range.positionMenuAtCaret(scrollTo);
-
-      if (!items.length) {
-        let noMatchEvent = new CustomEvent("tribute-no-match", {
-          detail: this.menu
-        });
-        this.current.element.dispatchEvent(noMatchEvent);
-        if (
-          (typeof this.current.collection.noMatchTemplate === "function" &&
-            !this.current.collection.noMatchTemplate()) ||
-          !this.current.collection.noMatchTemplate
-        ) {
-          this.hideMenu();
-        } else {
-          typeof this.current.collection.noMatchTemplate === "function"
-            ? (ul.innerHTML = this.current.collection.noMatchTemplate())
-            : (ul.innerHTML = this.current.collection.noMatchTemplate);
-        }
-
-        return;
-      }
-
-      ul.innerHTML = "";
-      let fragment = this.range.getDocument().createDocumentFragment();
-
+      const pages = [];
+      let page = [],
+          pageItemIndex = 0;
       items.forEach((item, index) => {
-        let li = this.range.getDocument().createElement("li");
-        li.setAttribute("data-index", index);
-        li.className = this.current.collection.itemClass;
-        li.addEventListener("mousemove", e => {
-          let [li, index] = this._findLiTarget(e.target);
-          if (e.movementY !== 0) {
-            this.events.setActiveLi(index);
-          }
-        });
-        if (this.menuSelected === index) {
-          li.classList.add(this.current.collection.selectClass);
+        page.push(item);
+        pageItemIndex++;
+
+        if (pageItemIndex + 1 == this.current.collection.menuPageLimit) {
+          pages.push(page);
+          page = [];
+          pageItemIndex = 0;
+        } else if (index + 1 == items.length) {
+          // Last item
+          pages.push(page);
         }
-        li.innerHTML = this.current.collection.menuItemTemplate(item);
-        fragment.appendChild(li);
       });
-      ul.appendChild(fragment);
+      this.pages = pages;
+      this.currentPage = 0; // Reset to first page
+      this.makePage();
     };
 
     if (typeof this.current.collection.values === "function") {
@@ -1672,6 +1736,101 @@ class Tribute {
       this.current.collection.values(this.current.mentionText, processValues);
     } else {
       processValues(this.current.collection.values);
+    }
+  }
+
+  makeList (items) {
+    this.current.filteredItems = items;
+
+    let ul = this.menu.querySelector("ul");
+
+    this.range.positionMenuAtCaret(scrollTo);
+
+    if (!items.length) {
+      let noMatchEvent = new CustomEvent("tribute-no-match", {
+        detail: this.menu
+      });
+      this.current.element.dispatchEvent(noMatchEvent);
+      if (
+        (typeof this.current.collection.noMatchTemplate === "function" &&
+          !this.current.collection.noMatchTemplate()) ||
+        !this.current.collection.noMatchTemplate
+      ) {
+        this.hideMenu();
+      } else {
+        typeof this.current.collection.noMatchTemplate === "function"
+          ? (ul.innerHTML = this.current.collection.noMatchTemplate())
+          : (ul.innerHTML = this.current.collection.noMatchTemplate);
+      }
+
+      return;
+    }
+
+    ul.innerHTML = "";
+    let fragment = this.range.getDocument().createDocumentFragment();
+
+    for (let index = 0; index < items.length; index++) {
+      const item = items[index];
+
+      let li = this.range.getDocument().createElement("li");
+      li.setAttribute("data-index", index);
+      li.className = this.current.collection.itemClass;
+      li.addEventListener("mousemove", e => {
+        let [li, index] = this._findLiTarget(e.target);
+        if (e.movementY !== 0) {
+          this.events.setActiveLi(index);
+        }
+      });
+      if (this.menuSelected === index) {
+        li.classList.add(this.current.collection.selectClass);
+      }
+      li.innerHTML = `<div class="index">${index}:</div><div class="suggestion">` + this.current.collection.menuItemTemplate(item) + `</div>`;
+      fragment.appendChild(li);
+    }
+    ul.appendChild(fragment);
+  }
+
+  // Make current page
+  makePage () {
+    if (!this.pages[this.currentPage]) {
+      return;
+    }
+    this.makeList(this.pages[this.currentPage]);
+
+    const pager = this.menu.getElementsByClassName("pager")[0];
+    const previousButton = pager.querySelector("#webime-previous");
+    const nextButton = pager.querySelector("#webime-next");
+
+    if (this.currentPage === 0) {
+      previousButton.classList.add("hidden");
+    } else {
+      previousButton.classList.remove("hidden");
+    }
+
+    if (this.currentPage + 1 >= this.pages.length) {
+      nextButton.classList.add("hidden");
+    } else {
+      nextButton.classList.remove("hidden");
+    }
+
+    if (this.currentPage === 0 && this.pages.length == 1) {
+      pager.classList.add("hidden");
+    } else {
+      pager.classList.remove("hidden");
+    }
+  }
+
+  previousPage() {
+    if (this.currentPage-1 >= 0) {
+      this.currentPage--;
+      this.makePage();
+    }
+  }
+
+  nextPage() {
+    if (this.pages.length > this.currentPage+1) {
+      this.currentPage++;
+      this.makePage();
     }
   }
 
@@ -1755,6 +1914,8 @@ class Tribute {
       this.menu.style.cssText = "display: none;";
       this.isActive = false;
       this.menuSelected = 0;
+      this.pages = [];
+      this.currentPage = 0;
       this.current = {};
     }
   }
