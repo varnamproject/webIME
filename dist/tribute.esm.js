@@ -828,6 +828,66 @@ class TributeRange {
         return text
     }
 
+    getTextOfCurrentWord() {
+        let context = this.tribute.current,
+            text = '',
+            start = 0,
+            end = 0;
+        
+        const stopCharacters = [' ', '\n', '\r', '\t', ',', '.'];
+
+        if (!this.isContentEditable(context.element)) {
+            let textComponent = this.tribute.current.element;
+            if (textComponent) {
+                if (textComponent.value) {
+                    let inputText = textComponent.value;
+
+                    end = textComponent.selectionEnd;
+                    let textBeforeCursor = inputText.substr(0, end);
+
+                    let indexOfDelimiter = -1;
+                    let idx, d;
+                    for (let i = 0; i < stopCharacters.length; i++) {
+                        d = stopCharacters[i];
+                        idx = textBeforeCursor.lastIndexOf(d);
+                        if (idx > indexOfDelimiter) {
+                            indexOfDelimiter = idx;
+                        }
+                    }
+
+                    while (end < inputText.length) {
+                        if (stopCharacters.indexOf(inputText[end]) === -1) {
+                            ++end;
+                        } else {
+                            break
+                        }
+                    }
+
+                    if (indexOfDelimiter < 0) {
+                        start = 0;
+                    } else {
+                        start = indexOfDelimiter + 1;
+                    }
+                    text = inputText.substring(start, end);
+                }
+            }
+
+        } else {
+            let selectedElem = this.getWindowSelection().anchorNode;
+
+            if (selectedElem != null) {
+                let workingNodeContent = selectedElem.textContent;
+                let selectStartOffset = this.getWindowSelection().getRangeAt(0).startOffset;
+
+                if (workingNodeContent && selectStartOffset >= 0) {
+                    text = workingNodeContent.substring(0, selectStartOffset);
+                }
+            }
+        }
+
+        return {start, end, text}
+    }
+
     getLastWordInText(text) {
         var wordsArray;
         if (this.tribute.autocompleteSeparator) {
@@ -855,18 +915,19 @@ class TributeRange {
             }
         }
 
-        let effectiveRange = this.getTextPrecedingCurrentSelection();
-        let lastWordOfEffectiveRange = this.getLastWordInText(effectiveRange);
+        let {start, end, text} = this.getTextOfCurrentWord();
 
         if (isAutocomplete) {
             return {
-                mentionPosition: effectiveRange.length - lastWordOfEffectiveRange.length,
-                mentionText: lastWordOfEffectiveRange,
+                mentionPosition: start,
+                mentionText: text,
                 mentionSelectedElement: selected,
                 mentionSelectedPath: path,
                 mentionSelectedOffset: offset
             }
         }
+
+        let effectiveRange = this.getTextPrecedingCurrentSelection();
 
         if (effectiveRange !== undefined && effectiveRange !== null) {
             let mostRecentTriggerCharPos = -1;

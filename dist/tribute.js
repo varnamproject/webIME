@@ -907,6 +907,71 @@
         return text;
       }
     }, {
+      key: "getTextOfCurrentWord",
+      value: function getTextOfCurrentWord() {
+        var context = this.tribute.current,
+            text = '',
+            start = 0,
+            end = 0;
+        var stopCharacters = [' ', '\n', '\r', '\t', ',', '.'];
+
+        if (!this.isContentEditable(context.element)) {
+          var textComponent = this.tribute.current.element;
+
+          if (textComponent) {
+            if (textComponent.value) {
+              var inputText = textComponent.value;
+              end = textComponent.selectionEnd;
+              var textBeforeCursor = inputText.substr(0, end);
+              var indexOfDelimiter = -1;
+              var idx, d;
+
+              for (var i = 0; i < stopCharacters.length; i++) {
+                d = stopCharacters[i];
+                idx = textBeforeCursor.lastIndexOf(d);
+
+                if (idx > indexOfDelimiter) {
+                  indexOfDelimiter = idx;
+                }
+              }
+
+              while (end < inputText.length) {
+                if (stopCharacters.indexOf(inputText[end]) === -1) {
+                  ++end;
+                } else {
+                  break;
+                }
+              }
+
+              if (indexOfDelimiter < 0) {
+                start = 0;
+              } else {
+                start = indexOfDelimiter + 1;
+              }
+
+              text = inputText.substring(start, end);
+            }
+          }
+        } else {
+          var selectedElem = this.getWindowSelection().anchorNode;
+
+          if (selectedElem != null) {
+            var workingNodeContent = selectedElem.textContent;
+            var selectStartOffset = this.getWindowSelection().getRangeAt(0).startOffset;
+
+            if (workingNodeContent && selectStartOffset >= 0) {
+              text = workingNodeContent.substring(0, selectStartOffset);
+            }
+          }
+        }
+
+        return {
+          start: start,
+          end: end,
+          text: text
+        };
+      }
+    }, {
       key: "getLastWordInText",
       value: function getLastWordInText(text) {
         var wordsArray;
@@ -940,18 +1005,22 @@
           }
         }
 
-        var effectiveRange = this.getTextPrecedingCurrentSelection();
-        var lastWordOfEffectiveRange = this.getLastWordInText(effectiveRange);
+        var _this$getTextOfCurren = this.getTextOfCurrentWord(),
+            start = _this$getTextOfCurren.start,
+            end = _this$getTextOfCurren.end,
+            text = _this$getTextOfCurren.text;
 
         if (isAutocomplete) {
           return {
-            mentionPosition: effectiveRange.length - lastWordOfEffectiveRange.length,
-            mentionText: lastWordOfEffectiveRange,
+            mentionPosition: start,
+            mentionText: text,
             mentionSelectedElement: selected,
             mentionSelectedPath: path,
             mentionSelectedOffset: offset
           };
         }
+
+        var effectiveRange = this.getTextPrecedingCurrentSelection();
 
         if (effectiveRange !== undefined && effectiveRange !== null) {
           var mostRecentTriggerCharPos = -1;
