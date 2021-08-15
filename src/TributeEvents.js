@@ -278,6 +278,7 @@ class TributeEvents {
       space: (e, el) => {
         if (this.tribute.isActive) {
           if (this.tribute.spaceSelectsMatch) {
+            e.spaceSelection = true; // custom property
             this.callbacks().enter(e, el);
           } else if (!this.tribute.allowSpaces) {
             e.stopPropagation();

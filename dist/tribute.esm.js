@@ -342,6 +342,7 @@ class TributeEvents {
       space: (e, el) => {
         if (this.tribute.isActive) {
           if (this.tribute.spaceSelectsMatch) {
+            e.spaceSelection = true; // custom property
             this.callbacks().enter(e, el);
           } else if (!this.tribute.allowSpaces) {
             e.stopPropagation();
@@ -1372,6 +1373,7 @@ class TributeSearch {
     }
 }
 
+// TODO rename
 class Tribute {
   constructor({
     values = null,
@@ -1381,7 +1383,7 @@ class Tribute {
     containerClass = "tribute-container",
     itemClass = "",
     trigger = "@",
-    autocompleteMode = false,
+    autocompleteMode = true, // webIME change
     autocompleteSeparator = null,
     selectTemplate = null,
     menuItemTemplate = null,
@@ -1392,9 +1394,9 @@ class Tribute {
     noMatchTemplate = null,
     requireLeadingSpace = true,
     allowSpaces = false,
-    replaceTextSuffix = null,
+    replaceTextSuffix = "", // webIME change
     positionMenu = true,
-    spaceSelectsMatch = false,
+    spaceSelectsMatch = true, // webIME change
     searchOpts = {},
     menuItemLimit = null,
     menuShowMinLength = 0,
@@ -1925,6 +1927,9 @@ class Tribute {
     if (typeof index !== "number" || isNaN(index)) return;
     let item = this.current.filteredItems[index];
     let content = this.current.collection.selectTemplate(item);
+    if (originalEvent.spaceSelection) {
+      content += " "; // add a space
+    }
     if (content !== null) this.replaceText(content, originalEvent, item);
   }
 

@@ -4,6 +4,7 @@ import TributeMenuEvents from "./TributeMenuEvents";
 import TributeRange from "./TributeRange";
 import TributeSearch from "./TributeSearch";
 
+// TODO rename
 class Tribute {
   constructor({
     values = null,
@@ -13,7 +14,7 @@ class Tribute {
     containerClass = "tribute-container",
     itemClass = "",
     trigger = "@",
-    autocompleteMode = false,
+    autocompleteMode = true, // webIME change
     autocompleteSeparator = null,
     selectTemplate = null,
     menuItemTemplate = null,
@@ -24,9 +25,9 @@ class Tribute {
     noMatchTemplate = null,
     requireLeadingSpace = true,
     allowSpaces = false,
-    replaceTextSuffix = null,
+    replaceTextSuffix = "", // webIME change
     positionMenu = true,
-    spaceSelectsMatch = false,
+    spaceSelectsMatch = true, // webIME change
     searchOpts = {},
     menuItemLimit = null,
     menuShowMinLength = 0,
@@ -557,6 +558,9 @@ class Tribute {
     if (typeof index !== "number" || isNaN(index)) return;
     let item = this.current.filteredItems[index];
     let content = this.current.collection.selectTemplate(item);
+    if (originalEvent.spaceSelection) {
+      content += " "; // add a space
+    }
     if (content !== null) this.replaceText(content, originalEvent, item);
   }
 

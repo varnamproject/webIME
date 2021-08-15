@@ -378,6 +378,8 @@
           space: function space(e, el) {
             if (_this.tribute.isActive) {
               if (_this.tribute.spaceSelectsMatch) {
+                e.spaceSelection = true; // custom property
+
                 _this.callbacks().enter(e, el);
               } else if (!_this.tribute.allowSpaces) {
                 e.stopPropagation();
@@ -1437,7 +1439,7 @@
           _ref$trigger = _ref.trigger,
           trigger = _ref$trigger === void 0 ? "@" : _ref$trigger,
           _ref$autocompleteMode = _ref.autocompleteMode,
-          autocompleteMode = _ref$autocompleteMode === void 0 ? false : _ref$autocompleteMode,
+          autocompleteMode = _ref$autocompleteMode === void 0 ? true : _ref$autocompleteMode,
           _ref$autocompleteSepa = _ref.autocompleteSeparator,
           autocompleteSeparator = _ref$autocompleteSepa === void 0 ? null : _ref$autocompleteSepa,
           _ref$selectTemplate = _ref.selectTemplate,
@@ -1459,11 +1461,11 @@
           _ref$allowSpaces = _ref.allowSpaces,
           allowSpaces = _ref$allowSpaces === void 0 ? false : _ref$allowSpaces,
           _ref$replaceTextSuffi = _ref.replaceTextSuffix,
-          replaceTextSuffix = _ref$replaceTextSuffi === void 0 ? null : _ref$replaceTextSuffi,
+          replaceTextSuffix = _ref$replaceTextSuffi === void 0 ? "" : _ref$replaceTextSuffi,
           _ref$positionMenu = _ref.positionMenu,
           positionMenu = _ref$positionMenu === void 0 ? true : _ref$positionMenu,
           _ref$spaceSelectsMatc = _ref.spaceSelectsMatch,
-          spaceSelectsMatch = _ref$spaceSelectsMatc === void 0 ? false : _ref$spaceSelectsMatc,
+          spaceSelectsMatch = _ref$spaceSelectsMatc === void 0 ? true : _ref$spaceSelectsMatc,
           _ref$searchOpts = _ref.searchOpts,
           searchOpts = _ref$searchOpts === void 0 ? {} : _ref$searchOpts,
           _ref$menuItemLimit = _ref.menuItemLimit,
@@ -1929,6 +1931,11 @@
         if (typeof index !== "number" || isNaN(index)) return;
         var item = this.current.filteredItems[index];
         var content = this.current.collection.selectTemplate(item);
+
+        if (originalEvent.spaceSelection) {
+          content += " "; // add a space
+        }
+
         if (content !== null) this.replaceText(content, originalEvent, item);
       }
     }, {
