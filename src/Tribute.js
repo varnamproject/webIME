@@ -30,8 +30,9 @@ class Tribute {
     spaceSelectsMatch = true, // webIME change
     searchOpts = {},
     menuItemLimit = null,
-    menuShowMinLength = 0,
+    menuShowMinLength = 1, // webIME change
     menuPageLimit = 9,
+    wordBreakChars = [".", ",", "?", "!", "(", ")"],
   }) {
     this.autocompleteMode = autocompleteMode;
     this.autocompleteSeparator = autocompleteSeparator;
@@ -47,6 +48,7 @@ class Tribute {
     this.spaceSelectsMatch = spaceSelectsMatch;
     this.pages = [];
     this.currentPage = 0;
+    this.wordBreakChars = wordBreakChars;
 
     if (this.autocompleteMode) {
       trigger = "";
@@ -119,7 +121,7 @@ class Tribute {
 
           menuShowMinLength: menuShowMinLength,
 
-          menuPageLimit: menuPageLimit
+          menuPageLimit: menuPageLimit,
         }
       ];
     } else if (collection) {
@@ -165,7 +167,8 @@ class Tribute {
           searchOpts: item.searchOpts || searchOpts,
           menuItemLimit: item.menuItemLimit || menuItemLimit,
           menuShowMinLength: item.menuShowMinLength || menuShowMinLength,
-          menuPageLimit: item.menuPageLimit || menuPageLimit
+          menuPageLimit: item.menuPageLimit || menuPageLimit,
+          wordBreakChars: item.wordBreakChars || wordBreakChars,
         };
       });
     } else {
@@ -558,9 +561,13 @@ class Tribute {
     if (typeof index !== "number" || isNaN(index)) return;
     let item = this.current.filteredItems[index];
     let content = this.current.collection.selectTemplate(item);
+
     if (originalEvent.spaceSelection) {
       content += " "; // add a space
+    } else if (originalEvent.wordBreak) {
+      content += originalEvent.key; // add the break character
     }
+
     if (content !== null) this.replaceText(content, originalEvent, item);
   }
 

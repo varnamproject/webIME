@@ -156,6 +156,11 @@
     }
 
     _createClass(TributeEvents, [{
+      key: "isWordBreak",
+      value: function isWordBreak(e) {
+        return this.tribute.wordBreakChars.includes(e.key);
+      }
+    }, {
       key: "bind",
       value: function bind(element) {
         element.boundKeydown = this.keydown.bind(element, this);
@@ -201,6 +206,9 @@
 
           instance.commandEvent = true;
           instance.callbacks()['numeric'](event, _suggestionIndex);
+        } else if (instance.isWordBreak(event)) {
+          console.log(instance.isWordBreak(event));
+          instance.callbacks()['wordBreak'](event, element);
         } else {
           TributeEvents.keys().forEach(function (o) {
             if (o.key === event.keyCode) {
@@ -470,6 +478,13 @@
 
                 _this.tribute.hideMenu();
               }, 0);
+            }
+          },
+          wordBreak: function wordBreak(e, el) {
+            if (_this.tribute.isActive) {
+              e.wordBreak = true; // custom property
+
+              _this.callbacks().enter(e, el);
             }
           }
         };
@@ -1542,9 +1557,11 @@
           _ref$menuItemLimit = _ref.menuItemLimit,
           menuItemLimit = _ref$menuItemLimit === void 0 ? null : _ref$menuItemLimit,
           _ref$menuShowMinLengt = _ref.menuShowMinLength,
-          menuShowMinLength = _ref$menuShowMinLengt === void 0 ? 0 : _ref$menuShowMinLengt,
+          menuShowMinLength = _ref$menuShowMinLengt === void 0 ? 1 : _ref$menuShowMinLengt,
           _ref$menuPageLimit = _ref.menuPageLimit,
-          menuPageLimit = _ref$menuPageLimit === void 0 ? 9 : _ref$menuPageLimit;
+          menuPageLimit = _ref$menuPageLimit === void 0 ? 9 : _ref$menuPageLimit,
+          _ref$wordBreakChars = _ref.wordBreakChars,
+          wordBreakChars = _ref$wordBreakChars === void 0 ? [".", ",", "?", "!", "(", ")"] : _ref$wordBreakChars;
 
       _classCallCheck(this, Tribute);
 
@@ -1562,6 +1579,7 @@
       this.spaceSelectsMatch = spaceSelectsMatch;
       this.pages = [];
       this.currentPage = 0;
+      this.wordBreakChars = wordBreakChars;
 
       if (this.autocompleteMode) {
         trigger = "";
@@ -1647,7 +1665,8 @@
             searchOpts: item.searchOpts || searchOpts,
             menuItemLimit: item.menuItemLimit || menuItemLimit,
             menuShowMinLength: item.menuShowMinLength || menuShowMinLength,
-            menuPageLimit: item.menuPageLimit || menuPageLimit
+            menuPageLimit: item.menuPageLimit || menuPageLimit,
+            wordBreakChars: item.wordBreakChars || wordBreakChars
           };
         });
       } else {
@@ -2005,6 +2024,8 @@
 
         if (originalEvent.spaceSelection) {
           content += " "; // add a space
+        } else if (originalEvent.wordBreak) {
+          content += originalEvent.key; // add the break character
         }
 
         if (content !== null) this.replaceText(content, originalEvent, item);

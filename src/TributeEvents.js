@@ -45,6 +45,10 @@ class TributeEvents {
     ];
   }
 
+  isWordBreak(e) {
+    return this.tribute.wordBreakChars.includes(e.key)
+  }
+
   bind(element) {
     element.boundKeydown = this.keydown.bind(element, this);
     element.boundKeyup = this.keyup.bind(element, this);
@@ -86,6 +90,9 @@ class TributeEvents {
 
       instance.commandEvent = true;
       instance.callbacks()['numeric'](event, suggestionIndex);
+    } else if (instance.isWordBreak(event)) {
+      console.log(instance.isWordBreak(event))
+      instance.callbacks()['wordBreak'](event, element);
     } else {
       TributeEvents.keys().forEach(o => {
         if (o.key === event.keyCode) {
@@ -360,6 +367,12 @@ class TributeEvents {
             this.tribute.selectItemAtIndex(index, e);
             this.tribute.hideMenu();
           }, 0);
+        }
+      },
+      wordBreak: (e, el) => {
+        if (this.tribute.isActive) {
+          e.wordBreak = true; // custom property
+          this.callbacks().enter(e, el);
         }
       }
     };

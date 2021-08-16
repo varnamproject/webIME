@@ -110,6 +110,10 @@ class TributeEvents {
     ];
   }
 
+  isWordBreak(e) {
+    return this.tribute.wordBreakChars.includes(e.key)
+  }
+
   bind(element) {
     element.boundKeydown = this.keydown.bind(element, this);
     element.boundKeyup = this.keyup.bind(element, this);
@@ -151,6 +155,9 @@ class TributeEvents {
 
       instance.commandEvent = true;
       instance.callbacks()['numeric'](event, suggestionIndex);
+    } else if (instance.isWordBreak(event)) {
+      console.log(instance.isWordBreak(event));
+      instance.callbacks()['wordBreak'](event, element);
     } else {
       TributeEvents.keys().forEach(o => {
         if (o.key === event.keyCode) {
@@ -424,6 +431,12 @@ class TributeEvents {
             this.tribute.selectItemAtIndex(index, e);
             this.tribute.hideMenu();
           }, 0);
+        }
+      },
+      wordBreak: (e, el) => {
+        if (this.tribute.isActive) {
+          e.wordBreak = true; // custom property
+          this.callbacks().enter(e, el);
         }
       }
     };
@@ -1460,8 +1473,9 @@ class Tribute {
     spaceSelectsMatch = true, // webIME change
     searchOpts = {},
     menuItemLimit = null,
-    menuShowMinLength = 0,
+    menuShowMinLength = 1, // webIME change
     menuPageLimit = 9,
+    wordBreakChars = [".", ",", "?", "!", "(", ")"],
   }) {
     this.autocompleteMode = autocompleteMode;
     this.autocompleteSeparator = autocompleteSeparator;
@@ -1477,6 +1491,7 @@ class Tribute {
     this.spaceSelectsMatch = spaceSelectsMatch;
     this.pages = [];
     this.currentPage = 0;
+    this.wordBreakChars = wordBreakChars;
 
     if (this.autocompleteMode) {
       trigger = "";
@@ -1549,7 +1564,7 @@ class Tribute {
 
           menuShowMinLength: menuShowMinLength,
 
-          menuPageLimit: menuPageLimit
+          menuPageLimit: menuPageLimit,
         }
       ];
     } else if (collection) {
@@ -1595,7 +1610,8 @@ class Tribute {
           searchOpts: item.searchOpts || searchOpts,
           menuItemLimit: item.menuItemLimit || menuItemLimit,
           menuShowMinLength: item.menuShowMinLength || menuShowMinLength,
-          menuPageLimit: item.menuPageLimit || menuPageLimit
+          menuPageLimit: item.menuPageLimit || menuPageLimit,
+          wordBreakChars: item.wordBreakChars || wordBreakChars,
         };
       });
     } else {
@@ -1988,9 +2004,13 @@ class Tribute {
     if (typeof index !== "number" || isNaN(index)) return;
     let item = this.current.filteredItems[index];
     let content = this.current.collection.selectTemplate(item);
+
     if (originalEvent.spaceSelection) {
       content += " "; // add a space
+    } else if (originalEvent.wordBreak) {
+      content += originalEvent.key; // add the break character
     }
+
     if (content !== null) this.replaceText(content, originalEvent, item);
   }
 
