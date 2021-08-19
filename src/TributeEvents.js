@@ -91,7 +91,6 @@ class TributeEvents {
       instance.commandEvent = true;
       instance.callbacks()['numeric'](event, suggestionIndex);
     } else if (instance.isWordBreak(event)) {
-      console.log(instance.isWordBreak(event))
       instance.callbacks()['wordBreak'](event, element);
     } else {
       TributeEvents.keys().forEach(o => {
@@ -176,6 +175,7 @@ class TributeEvents {
       instance.tribute.current.mentionText.length <
       instance.tribute.current.collection.menuShowMinLength
     ) {
+      instance.tribute.hideMenu();
       return;
     }
 

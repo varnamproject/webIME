@@ -278,7 +278,7 @@ class TributeRange {
             start = 0,
             end = 0;
         
-        const stopCharacters = [' ', '\n', '\r', '\t', ',', '.']
+        const stopCharacters = this.tribute.wordStopChars;
 
         if (!this.isContentEditable(context.element)) {
             let textComponent = this.tribute.current.element;

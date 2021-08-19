@@ -32,7 +32,8 @@ class Tribute {
     menuItemLimit = null,
     menuShowMinLength = 1, // webIME change
     menuPageLimit = 9,
-    wordBreakChars = [".", ",", "?", "!", "(", ")"],
+    wordBreakChars = [".", ",", "?", "!", "(", ")"], // For handling key events
+    wordStopChars = [".", " ", ",", "?", "!", "(", ")", "\n", "\r", "\t"], // For filtering word from a sentence
   }) {
     this.autocompleteMode = autocompleteMode;
     this.autocompleteSeparator = autocompleteSeparator;
@@ -49,6 +50,7 @@ class Tribute {
     this.pages = [];
     this.currentPage = 0;
     this.wordBreakChars = wordBreakChars;
+    this.wordStopChars = wordStopChars;
 
     if (this.autocompleteMode) {
       trigger = "";
@@ -169,6 +171,7 @@ class Tribute {
           menuShowMinLength: item.menuShowMinLength || menuShowMinLength,
           menuPageLimit: item.menuPageLimit || menuPageLimit,
           wordBreakChars: item.wordBreakChars || wordBreakChars,
+          wordStopChars: item.wordStopChars || wordStopChars,
         };
       });
     } else {
