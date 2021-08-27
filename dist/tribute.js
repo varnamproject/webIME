@@ -165,10 +165,13 @@
       value: function bind(element) {
         element.boundKeydown = this.keydown.bind(element, this);
         element.boundKeyup = this.keyup.bind(element, this);
-        element.boundInput = this.input.bind(element, this);
+        element.boundInput = this.input.bind(element, this); // WebIME: For showing suggestions on clicking a word
+
+        element.boundClick = this.inputClick.bind(element, this);
         element.addEventListener("keydown", element.boundKeydown, true);
         element.addEventListener("keyup", element.boundKeyup, true);
         element.addEventListener("input", element.boundInput, true);
+        element.addEventListener("click", element.boundClick, true);
       }
     }, {
       key: "unbind",
@@ -176,9 +179,11 @@
         element.removeEventListener("keydown", element.boundKeydown, true);
         element.removeEventListener("keyup", element.boundKeyup, true);
         element.removeEventListener("input", element.boundInput, true);
+        element.removeEventListener("click", element.boundClick, true);
         delete element.boundKeydown;
         delete element.boundKeyup;
         delete element.boundInput;
+        delete element.boundClick;
       }
     }, {
       key: "keydown",
@@ -207,7 +212,6 @@
           instance.commandEvent = true;
           instance.callbacks()['numeric'](event, _suggestionIndex);
         } else if (instance.isWordBreak(event)) {
-          console.log(instance.isWordBreak(event));
           instance.callbacks()['wordBreak'](event, element);
         } else {
           TributeEvents.keys().forEach(function (o) {
@@ -295,6 +299,7 @@
         }
 
         if (instance.tribute.current.mentionText.length < instance.tribute.current.collection.menuShowMinLength) {
+          instance.tribute.hideMenu();
           return;
         }
 
@@ -528,6 +533,20 @@
         }
 
         return height;
+      } // Handle click events on input element
+
+    }, {
+      key: "inputClick",
+      value: function inputClick(instance, event) {
+        var tribute = instance.tribute;
+        tribute.current.collection = tribute.collection.find(function (item) {
+          return item.trigger === "";
+        });
+        instance.updateSelection(this);
+
+        if (tribute.current.mentionText.length > tribute.current.collection.menuShowMinLength) {
+          tribute.showMenuFor(this, true);
+        }
       }
     }], [{
       key: "keys",
@@ -925,15 +944,14 @@
       }
     }, {
       key: "getTextOfCurrentWord",
-      value: function getTextOfCurrentWord() {
-        var context = this.tribute.current,
-            text = '',
+      value: function getTextOfCurrentWord(elem) {
+        var text = '',
             start = 0,
             end = 0;
-        var stopCharacters = [' ', '\n', '\r', '\t', ',', '.'];
+        var stopCharacters = this.tribute.wordStopChars;
 
-        if (!this.isContentEditable(context.element)) {
-          var textComponent = this.tribute.current.element;
+        if (!this.isContentEditable(elem)) {
+          var textComponent = elem;
 
           if (textComponent) {
             if (textComponent.value) {
@@ -1022,7 +1040,7 @@
           }
         }
 
-        var _this$getTextOfCurren = this.getTextOfCurrentWord(),
+        var _this$getTextOfCurren = this.getTextOfCurrentWord(selected),
             start = _this$getTextOfCurren.start,
             end = _this$getTextOfCurren.end,
             text = _this$getTextOfCurren.text;
@@ -1561,7 +1579,9 @@
           _ref$menuPageLimit = _ref.menuPageLimit,
           menuPageLimit = _ref$menuPageLimit === void 0 ? 9 : _ref$menuPageLimit,
           _ref$wordBreakChars = _ref.wordBreakChars,
-          wordBreakChars = _ref$wordBreakChars === void 0 ? [".", ",", "?", "!", "(", ")"] : _ref$wordBreakChars;
+          wordBreakChars = _ref$wordBreakChars === void 0 ? [".", ",", "?", "!", "(", ")"] : _ref$wordBreakChars,
+          _ref$wordStopChars = _ref.wordStopChars,
+          wordStopChars = _ref$wordStopChars === void 0 ? [".", " ", ",", "?", "!", "(", ")", "\n", "\r", "\t"] : _ref$wordStopChars;
 
       _classCallCheck(this, Tribute);
 
@@ -1580,6 +1600,7 @@
       this.pages = [];
       this.currentPage = 0;
       this.wordBreakChars = wordBreakChars;
+      this.wordStopChars = wordStopChars;
 
       if (this.autocompleteMode) {
         trigger = "";
@@ -1666,7 +1687,8 @@
             menuItemLimit: item.menuItemLimit || menuItemLimit,
             menuShowMinLength: item.menuShowMinLength || menuShowMinLength,
             menuPageLimit: item.menuPageLimit || menuPageLimit,
-            wordBreakChars: item.wordBreakChars || wordBreakChars
+            wordBreakChars: item.wordBreakChars || wordBreakChars,
+            wordStopChars: item.wordStopChars || wordStopChars
           };
         });
       } else {
