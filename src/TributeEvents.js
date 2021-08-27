@@ -54,19 +54,25 @@ class TributeEvents {
     element.boundKeyup = this.keyup.bind(element, this);
     element.boundInput = this.input.bind(element, this);
 
+    // WebIME: For showing suggestions on clicking a word
+    element.boundClick = this.inputClick.bind(element, this);
+
     element.addEventListener("keydown", element.boundKeydown, true);
     element.addEventListener("keyup", element.boundKeyup, true);
     element.addEventListener("input", element.boundInput, true);
+    element.addEventListener("click", element.boundClick, true);
   }
 
   unbind(element) {
     element.removeEventListener("keydown", element.boundKeydown, true);
     element.removeEventListener("keyup", element.boundKeyup, true);
     element.removeEventListener("input", element.boundInput, true);
+    element.removeEventListener("click", element.boundClick, true);
 
     delete element.boundKeydown;
     delete element.boundKeyup;
     delete element.boundInput;
+    delete element.boundClick;
   }
 
   keydown(instance, event) {
@@ -416,6 +422,21 @@ class TributeEvents {
     }
 
     return height;
+  }
+
+  // Handle click events on input element
+  inputClick(instance, event) {
+    let tribute = instance.tribute;
+
+    tribute.current.collection = tribute.collection.find(item => {
+      return item.trigger === "";
+    });
+
+    instance.updateSelection(this);
+
+    if (tribute.current.mentionText.length > tribute.current.collection.menuShowMinLength) {
+      tribute.showMenuFor(this, true);
+    }
   }
 }
 

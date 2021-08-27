@@ -272,16 +272,15 @@ class TributeRange {
         return text
     }
 
-    getTextOfCurrentWord() {
-        let context = this.tribute.current,
-            text = '',
+    getTextOfCurrentWord(elem) {
+        let text = '',
             start = 0,
             end = 0;
-        
+
         const stopCharacters = this.tribute.wordStopChars;
 
-        if (!this.isContentEditable(context.element)) {
-            let textComponent = this.tribute.current.element;
+        if (!this.isContentEditable(elem)) {
+            let textComponent = elem;
             if (textComponent) {
                 if (textComponent.value) {
                     let inputText = textComponent.value
@@ -359,7 +358,7 @@ class TributeRange {
             }
         }
 
-        let {start, end, text} = this.getTextOfCurrentWord()
+        let {start, end, text} = this.getTextOfCurrentWord(selected)
 
         if (isAutocomplete) {
             return {

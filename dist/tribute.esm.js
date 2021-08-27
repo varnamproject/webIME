@@ -119,19 +119,25 @@ class TributeEvents {
     element.boundKeyup = this.keyup.bind(element, this);
     element.boundInput = this.input.bind(element, this);
 
+    // WebIME: For showing suggestions on clicking a word
+    element.boundClick = this.inputClick.bind(element, this);
+
     element.addEventListener("keydown", element.boundKeydown, true);
     element.addEventListener("keyup", element.boundKeyup, true);
     element.addEventListener("input", element.boundInput, true);
+    element.addEventListener("click", element.boundClick, true);
   }
 
   unbind(element) {
     element.removeEventListener("keydown", element.boundKeydown, true);
     element.removeEventListener("keyup", element.boundKeyup, true);
     element.removeEventListener("input", element.boundInput, true);
+    element.removeEventListener("click", element.boundClick, true);
 
     delete element.boundKeydown;
     delete element.boundKeyup;
     delete element.boundInput;
+    delete element.boundClick;
   }
 
   keydown(instance, event) {
@@ -156,7 +162,6 @@ class TributeEvents {
       instance.commandEvent = true;
       instance.callbacks()['numeric'](event, suggestionIndex);
     } else if (instance.isWordBreak(event)) {
-      console.log(instance.isWordBreak(event));
       instance.callbacks()['wordBreak'](event, element);
     } else {
       TributeEvents.keys().forEach(o => {
@@ -241,6 +246,7 @@ class TributeEvents {
       instance.tribute.current.mentionText.length <
       instance.tribute.current.collection.menuShowMinLength
     ) {
+      instance.tribute.hideMenu();
       return;
     }
 
@@ -480,6 +486,21 @@ class TributeEvents {
     }
 
     return height;
+  }
+
+  // Handle click events on input element
+  inputClick(instance, event) {
+    let tribute = instance.tribute;
+
+    tribute.current.collection = tribute.collection.find(item => {
+      return item.trigger === "";
+    });
+
+    instance.updateSelection(this);
+
+    if (tribute.current.mentionText.length > tribute.current.collection.menuShowMinLength) {
+      tribute.showMenuFor(this, true);
+    }
   }
 }
 
@@ -841,16 +862,15 @@ class TributeRange {
         return text
     }
 
-    getTextOfCurrentWord() {
-        let context = this.tribute.current,
-            text = '',
+    getTextOfCurrentWord(elem) {
+        let text = '',
             start = 0,
             end = 0;
-        
-        const stopCharacters = [' ', '\n', '\r', '\t', ',', '.'];
 
-        if (!this.isContentEditable(context.element)) {
-            let textComponent = this.tribute.current.element;
+        const stopCharacters = this.tribute.wordStopChars;
+
+        if (!this.isContentEditable(elem)) {
+            let textComponent = elem;
             if (textComponent) {
                 if (textComponent.value) {
                     let inputText = textComponent.value;
@@ -928,7 +948,7 @@ class TributeRange {
             }
         }
 
-        let {start, end, text} = this.getTextOfCurrentWord();
+        let {start, end, text} = this.getTextOfCurrentWord(selected);
 
         if (isAutocomplete) {
             return {
@@ -1475,7 +1495,8 @@ class Tribute {
     menuItemLimit = null,
     menuShowMinLength = 1, // webIME change
     menuPageLimit = 9,
-    wordBreakChars = [".", ",", "?", "!", "(", ")"],
+    wordBreakChars = [".", ",", "?", "!", "(", ")"], // For handling key events
+    wordStopChars = [".", " ", ",", "?", "!", "(", ")", "\n", "\r", "\t"], // For filtering word from a sentence
   }) {
     this.autocompleteMode = autocompleteMode;
     this.autocompleteSeparator = autocompleteSeparator;
@@ -1492,6 +1513,7 @@ class Tribute {
     this.pages = [];
     this.currentPage = 0;
     this.wordBreakChars = wordBreakChars;
+    this.wordStopChars = wordStopChars;
 
     if (this.autocompleteMode) {
       trigger = "";
@@ -1612,6 +1634,7 @@ class Tribute {
           menuShowMinLength: item.menuShowMinLength || menuShowMinLength,
           menuPageLimit: item.menuPageLimit || menuPageLimit,
           wordBreakChars: item.wordBreakChars || wordBreakChars,
+          wordStopChars: item.wordStopChars || wordStopChars,
         };
       });
     } else {
