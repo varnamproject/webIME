@@ -1,5 +1,3 @@
-
-(function(l, r) { if (l.getElementById('livereloadscript')) return; r = l.createElement('script'); r.async = 1; r.src = '//' + (window.location.host || 'localhost').split(':')[0] + ':35729/livereload.js?snipver=1'; r.id = 'livereloadscript'; l.head.appendChild(r) })(window.document);
 (function (global, factory) {
   typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
   typeof define === 'function' && define.amd ? define(factory) :
@@ -196,7 +194,7 @@
         var element = this;
         instance.commandEvent = false;
 
-        if (event.keyCode >= 49 && event.keyCode <= 57) {
+        if (event.keyCode >= 48 && event.keyCode <= 57) {
           // numeric keys
           var suggestionIndex = event.keyCode - 49; // 49 is key 1
 
@@ -479,7 +477,11 @@
               e.preventDefault();
               e.stopPropagation();
               setTimeout(function () {
-                _this.tribute.selectItemAtIndex(index, e);
+                if (index === -1) {
+                  _this.tribute.isActive = false;
+                } else {
+                  _this.tribute.selectItemAtIndex(index, e);
+                }
 
                 _this.tribute.hideMenu();
               }, 0);

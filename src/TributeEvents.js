@@ -84,7 +84,7 @@ class TributeEvents {
     let element = this;
     instance.commandEvent = false;
 
-    if (event.keyCode >= 49 && event.keyCode <= 57) {
+    if (event.keyCode >= 48 && event.keyCode <= 57) {
       // numeric keys
       const suggestionIndex = event.keyCode - 49 // 49 is key 1
 
@@ -370,7 +370,11 @@ class TributeEvents {
           e.preventDefault();
           e.stopPropagation();
           setTimeout(() => {
-            this.tribute.selectItemAtIndex(index, e);
+            if (index === -1) {
+              this.tribute.isActive = false;
+            } else {
+              this.tribute.selectItemAtIndex(index, e);
+            }
             this.tribute.hideMenu();
           }, 0);
         }
