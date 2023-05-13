@@ -10,8 +10,7 @@ export default defineConfig({
 
     lib: {
       entry: path.resolve(__dirname, "./src/index.ts"),
-      name: "WebIME",
-      fileName: (format) => `webime.${format}.js`,
+      fileName: (format) => `index.${format}.js`,
     },
     minify: "terser",
   },

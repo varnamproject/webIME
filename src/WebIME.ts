@@ -5,7 +5,7 @@ import TributeRange from "./TributeRange";
 import TributeSearch from "./TributeSearch";
 import { TributeElement, TributeOptions } from "./types";
 
-class Tribute<T extends {}> {
+class WebIME<T extends {}> {
   constructor({
     values = null,
     loadingItemTemplate = null,
@@ -77,12 +77,12 @@ class Tribute<T extends {}> {
 
           // function called on select that retuns the content to insert
           selectTemplate: (
-            selectTemplate || Tribute.defaultSelectTemplate
+            selectTemplate || WebIME.defaultSelectTemplate
           ).bind(this),
 
           // function called that returns content for an item
           menuItemTemplate: (
-            menuItemTemplate || Tribute.defaultMenuItemTemplate
+            menuItemTemplate || WebIME.defaultMenuItemTemplate
           ).bind(this),
 
           // function called when menu is empty, disables hiding of menu.
@@ -139,10 +139,10 @@ class Tribute<T extends {}> {
           containerClass: item.containerClass || containerClass,
           itemClass: item.itemClass || itemClass,
           selectTemplate: (
-            item.selectTemplate || Tribute.defaultSelectTemplate
+            item.selectTemplate || WebIME.defaultSelectTemplate
           ).bind(this),
           menuItemTemplate: (
-            item.menuItemTemplate || Tribute.defaultMenuItemTemplate
+            item.menuItemTemplate || WebIME.defaultMenuItemTemplate
           ).bind(this),
           // function called when menu is empty, disables hiding of menu.
           noMatchTemplate: ((t) => {
@@ -268,7 +268,7 @@ class Tribute<T extends {}> {
   }
 
   ensureEditable(element) {
-    if (Tribute.inputTypes().indexOf(element.nodeName) === -1) {
+    if (WebIME.inputTypes().indexOf(element.nodeName) === -1) {
       if (!element.contentEditable) {
         throw new Error(
           "[Tribute] Cannot bind to " +
@@ -664,4 +664,4 @@ class Tribute<T extends {}> {
   }
 }
 
-export default Tribute;
+export default WebIME;
