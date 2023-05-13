@@ -8,45 +8,45 @@ class TributeEvents {
     return [
       {
         key: 9,
-        value: "TAB"
+        value: "TAB",
       },
       {
         key: 8,
-        value: "DELETE"
+        value: "DELETE",
       },
       {
         key: 13,
-        value: "ENTER"
+        value: "ENTER",
       },
       {
         key: 27,
-        value: "ESCAPE"
+        value: "ESCAPE",
       },
       {
         key: 32,
-        value: "SPACE"
+        value: "SPACE",
       },
       {
         key: 38,
-        value: "UP"
+        value: "UP",
       },
       {
         key: 40,
-        value: "DOWN"
+        value: "DOWN",
       },
       {
         key: 37,
-        value: "LEFT"
+        value: "LEFT",
       },
       {
         key: 39,
-        value: "RIGHT"
-      }
+        value: "RIGHT",
+      },
     ];
   }
 
   isWordBreak(e) {
-    return this.tribute.wordBreakChars.includes(e.key)
+    return this.tribute.wordBreakChars.includes(e.key);
   }
 
   bind(element) {
@@ -84,22 +84,23 @@ class TributeEvents {
     let element = this;
     instance.commandEvent = false;
 
-    if (event.keyCode >= 49 && event.keyCode <= 57) {
+    if (event.keyCode >= 48 && event.keyCode <= 57) {
       // numeric keys
-      const suggestionIndex = event.keyCode - 49 // 49 is key 1
+      const suggestionIndex = event.keyCode - 49; // 49 is key 1
 
       instance.commandEvent = true;
-      instance.callbacks()['numeric'](event, suggestionIndex);
-    } if (event.keyCode >= 97 && event.keyCode <= 105) {
+      instance.callbacks()["numeric"](event, suggestionIndex);
+    }
+    if (event.keyCode >= 97 && event.keyCode <= 105) {
       // numpad keys
-      const suggestionIndex = event.keyCode - 97  // 97 is key 1
+      const suggestionIndex = event.keyCode - 97; // 97 is key 1
 
       instance.commandEvent = true;
-      instance.callbacks()['numeric'](event, suggestionIndex);
+      instance.callbacks()["numeric"](event, suggestionIndex);
     } else if (instance.isWordBreak(event)) {
-      instance.callbacks()['wordBreak'](event, element);
+      instance.callbacks()["wordBreak"](event, element);
     } else {
-      TributeEvents.keys().forEach(o => {
+      TributeEvents.keys().forEach((o) => {
         if (o.key === event.keyCode) {
           instance.commandEvent = true;
           instance.callbacks()[o.value.toLowerCase()](event, element);
@@ -167,7 +168,7 @@ class TributeEvents {
 
         if (isNaN(keyCode) || !keyCode) return;
 
-        let trigger = instance.tribute.triggers().find(trigger => {
+        let trigger = instance.tribute.triggers().find((trigger) => {
           return trigger.charCodeAt(0) === keyCode;
         });
 
@@ -200,7 +201,7 @@ class TributeEvents {
 
     if (this.tribute.current.mentionText.length === 0) {
       let eventKeyPressed = false;
-      TributeEvents.keys().forEach(o => {
+      TributeEvents.keys().forEach((o) => {
         if (event.keyCode === o.key) eventKeyPressed = true;
       });
 
@@ -251,7 +252,7 @@ class TributeEvents {
         let tribute = this.tribute;
         tribute.current.trigger = trigger;
 
-        let collectionItem = tribute.collection.find(item => {
+        let collectionItem = tribute.collection.find((item) => {
           return item.trigger === trigger;
         });
 
@@ -340,7 +341,14 @@ class TributeEvents {
       },
       left: (e, el) => {
         // navigate previous page
-        if (e.shiftKey && !e.ctrlKey && !e.metaKey && !e.altKey && this.tribute.isActive && this.tribute.current.filteredItems) {
+        if (
+          e.shiftKey &&
+          !e.ctrlKey &&
+          !e.metaKey &&
+          !e.altKey &&
+          this.tribute.isActive &&
+          this.tribute.current.filteredItems
+        ) {
           e.preventDefault();
           e.stopPropagation();
           this.tribute.previousPage();
@@ -348,7 +356,14 @@ class TributeEvents {
       },
       right: (e, el) => {
         // navigate next page
-        if (e.shiftKey && !e.ctrlKey && !e.metaKey && !e.altKey && this.tribute.isActive && this.tribute.current.filteredItems) {
+        if (
+          e.shiftKey &&
+          !e.ctrlKey &&
+          !e.metaKey &&
+          !e.altKey &&
+          this.tribute.isActive &&
+          this.tribute.current.filteredItems
+        ) {
           e.preventDefault();
           e.stopPropagation();
           this.tribute.nextPage();
@@ -370,7 +385,9 @@ class TributeEvents {
           e.preventDefault();
           e.stopPropagation();
           setTimeout(() => {
-            this.tribute.selectItemAtIndex(index, e);
+            if (index >= 0) {
+              this.tribute.selectItemAtIndex(index, e);
+            }
             this.tribute.hideMenu();
           }, 0);
         }
@@ -380,7 +397,7 @@ class TributeEvents {
           e.wordBreak = true; // custom property
           this.callbacks().enter(e, el);
         }
-      }
+      },
     };
   }
 
@@ -428,13 +445,16 @@ class TributeEvents {
   inputClick(instance, event) {
     let tribute = instance.tribute;
 
-    tribute.current.collection = tribute.collection.find(item => {
+    tribute.current.collection = tribute.collection.find((item) => {
       return item.trigger === "";
     });
 
     instance.updateSelection(this);
 
-    if (tribute.current.mentionText.length > tribute.current.collection.menuShowMinLength) {
+    if (
+      tribute.current.mentionText.length >
+      tribute.current.collection.menuShowMinLength
+    ) {
       tribute.showMenuFor(this, true);
     }
   }
