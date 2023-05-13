@@ -1,6 +1,6 @@
 if (!Array.prototype.find) {
-  Object.defineProperty(Array.prototype, 'find', {
-    value: function(predicate) {
+  Object.defineProperty(Array.prototype, "find", {
+    value: function (predicate) {
       // 1. Let O be ? ToObject(this value).
       if (this == null) {
         throw TypeError('"this" is null or not defined');
@@ -12,8 +12,8 @@ if (!Array.prototype.find) {
       var len = o.length >>> 0;
 
       // 3. If IsCallable(predicate) is false, throw a TypeError exception.
-      if (typeof predicate !== 'function') {
-        throw TypeError('predicate must be a function');
+      if (typeof predicate !== "function") {
+        throw TypeError("predicate must be a function");
       }
 
       // 4. If thisArg was supplied, let T be thisArg; else let T be undefined.
@@ -40,25 +40,30 @@ if (!Array.prototype.find) {
       return undefined;
     },
     configurable: true,
-    writable: true
+    writable: true,
   });
 }
 
-if (typeof window !== 'undefined' && typeof window.CustomEvent !== "function") {
+if (typeof window !== "undefined" && typeof window.CustomEvent !== "function") {
   function CustomEvent(event, params) {
     params = params || {
       bubbles: false,
       cancelable: false,
-      detail: undefined
-    }
-    var evt = document.createEvent('CustomEvent')
-    evt.initCustomEvent(event, params.bubbles, params.cancelable, params.detail)
-    return evt
+      detail: undefined,
+    };
+    var evt = document.createEvent("CustomEvent");
+    evt.initCustomEvent(
+      event,
+      params.bubbles,
+      params.cancelable,
+      params.detail
+    );
+    return evt;
   }
 
- if (typeof window.Event !== 'undefined') {
-   CustomEvent.prototype = window.Event.prototype
- }
+  if (typeof window.Event !== "undefined") {
+    CustomEvent.prototype = window.Event.prototype;
+  }
 
-  window.CustomEvent = CustomEvent
+  window.CustomEvent = CustomEvent;
 }

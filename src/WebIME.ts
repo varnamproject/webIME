@@ -76,9 +76,9 @@ class WebIME<T extends {}> {
           itemClass: itemClass,
 
           // function called on select that retuns the content to insert
-          selectTemplate: (
-            selectTemplate || WebIME.defaultSelectTemplate
-          ).bind(this),
+          selectTemplate: (selectTemplate || WebIME.defaultSelectTemplate).bind(
+            this
+          ),
 
           // function called that returns content for an item
           menuItemTemplate: (
@@ -529,9 +529,8 @@ class WebIME<T extends {}> {
 
   // for contenteditable
   insertTextAtCursor(text) {
-    let sel, range, html;
-    sel = window.getSelection();
-    range = sel.getRangeAt(0);
+    const sel = window.getSelection();
+    const range = sel.getRangeAt(0);
     range.deleteContents();
     const textNode = document.createTextNode(text);
     range.insertNode(textNode);
