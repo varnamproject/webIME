@@ -94,20 +94,8 @@ export type TributeOptions<T> =
       collection: Array<TributeCollection<{ [key: string]: any }>>;
     };
 
-type TributeElement = Element | NodeList | HTMLCollection | Array<Element>;
-
-export default class Tribute<T extends {}> {
-  constructor(options: TributeOptions<T>);
-
-  isActive: boolean;
-
-  append(index: number, values: Array<T>, replace?: boolean): void;
-
-  appendCurrent(values: Array<T>, replace?: boolean): void;
-
-  attach(to: TributeElement): void;
-
-  detach(to: TributeElement): void;
-
-  showMenuForCollection(input: Element, collectionIndex?: number): void;
-}
+export type TributeElement =
+  | Element
+  | NodeList
+  | HTMLCollection
+  | Array<Element>;

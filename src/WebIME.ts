@@ -3,9 +3,9 @@ import TributeEvents from "./TributeEvents";
 import TributeMenuEvents from "./TributeMenuEvents";
 import TributeRange from "./TributeRange";
 import TributeSearch from "./TributeSearch";
+import { TributeElement, TributeOptions } from "./types";
 
-// TODO rename
-class Tribute {
+class WebIME<T extends {}> {
   constructor({
     values = null,
     loadingItemTemplate = null,
@@ -34,7 +34,7 @@ class Tribute {
     menuPageLimit = 9,
     wordBreakChars = [".", ",", "?", "!", "(", ")"], // For handling key events
     wordStopChars = [".", " ", ",", "?", "!", "(", ")", "\n", "\r", "\t"], // For filtering word from a sentence
-  }) {
+  }: TributeOptions<T>) {
     this.autocompleteMode = autocompleteMode;
     this.autocompleteSeparator = autocompleteSeparator;
     this.menuSelected = 0;
@@ -77,16 +77,16 @@ class Tribute {
 
           // function called on select that retuns the content to insert
           selectTemplate: (
-            selectTemplate || Tribute.defaultSelectTemplate
+            selectTemplate || WebIME.defaultSelectTemplate
           ).bind(this),
 
           // function called that returns content for an item
           menuItemTemplate: (
-            menuItemTemplate || Tribute.defaultMenuItemTemplate
+            menuItemTemplate || WebIME.defaultMenuItemTemplate
           ).bind(this),
 
           // function called when menu is empty, disables hiding of menu.
-          noMatchTemplate: (t => {
+          noMatchTemplate: ((t) => {
             if (typeof t === "string") {
               if (t.trim() === "") return null;
               return t;
@@ -97,7 +97,7 @@ class Tribute {
 
             return (
               noMatchTemplate ||
-              function() {
+              function () {
                 return "<li>No Match Found!</li>";
               }.bind(this)
             );
@@ -124,14 +124,14 @@ class Tribute {
           menuShowMinLength: menuShowMinLength,
 
           menuPageLimit: menuPageLimit,
-        }
+        },
       ];
     } else if (collection) {
       if (this.autocompleteMode)
         console.warn(
           "Tribute in autocomplete mode does not work for collections"
         );
-      this.collection = collection.map(item => {
+      this.collection = collection.map((item) => {
         return {
           trigger: item.trigger || trigger,
           iframe: item.iframe || iframe,
@@ -139,13 +139,13 @@ class Tribute {
           containerClass: item.containerClass || containerClass,
           itemClass: item.itemClass || itemClass,
           selectTemplate: (
-            item.selectTemplate || Tribute.defaultSelectTemplate
+            item.selectTemplate || WebIME.defaultSelectTemplate
           ).bind(this),
           menuItemTemplate: (
-            item.menuItemTemplate || Tribute.defaultMenuItemTemplate
+            item.menuItemTemplate || WebIME.defaultMenuItemTemplate
           ).bind(this),
           // function called when menu is empty, disables hiding of menu.
-          noMatchTemplate: (t => {
+          noMatchTemplate: ((t) => {
             if (typeof t === "string") {
               if (t.trim() === "") return null;
               return t;
@@ -156,7 +156,7 @@ class Tribute {
 
             return (
               noMatchTemplate ||
-              function() {
+              function () {
                 return "<li>No Match Found!</li>";
               }.bind(this)
             );
@@ -184,7 +184,9 @@ class Tribute {
     new TributeSearch(this);
   }
 
-  get isActive() {
+  _isActive: boolean;
+
+  get isActive(): boolean {
     return this._isActive;
   }
 
@@ -192,7 +194,7 @@ class Tribute {
     if (this._isActive != val) {
       this._isActive = val;
       if (this.current.element) {
-        let noMatchEvent = new CustomEvent(`tribute-active-${val}`);
+        const noMatchEvent = new CustomEvent(`tribute-active-${val}`);
         this.current.element.dispatchEvent(noMatchEvent);
       }
     }
@@ -225,12 +227,12 @@ class Tribute {
   }
 
   triggers() {
-    return this.collection.map(config => {
+    return this.collection.map((config) => {
       return config.trigger;
     });
   }
 
-  attach(el) {
+  attach(el: TributeElement): void {
     if (!el) {
       throw new Error("[Tribute] Must pass in a DOM node or NodeList.");
     }
@@ -246,8 +248,8 @@ class Tribute {
       el.constructor === HTMLCollection ||
       el.constructor === Array
     ) {
-      let length = el.length;
-      for (var i = 0; i < length; ++i) {
+      const length = el.length;
+      for (let i = 0; i < length; ++i) {
         this._attach(el[i]);
       }
     } else {
@@ -266,22 +268,27 @@ class Tribute {
   }
 
   ensureEditable(element) {
-    if (Tribute.inputTypes().indexOf(element.nodeName) === -1) {
+    if (WebIME.inputTypes().indexOf(element.nodeName) === -1) {
       if (!element.contentEditable) {
-        throw new Error("[Tribute] Cannot bind to " + element.nodeName + ", not contentEditable");
+        throw new Error(
+          "[Tribute] Cannot bind to " +
+            element.nodeName +
+            ", not contentEditable"
+        );
       }
     }
   }
 
   createMenu(containerClass) {
-    let wrapper = this.range.getDocument().createElement("div"),
+    const wrapper = this.range.getDocument().createElement("div"),
       ul = this.range.getDocument().createElement("ul");
     wrapper.className = containerClass;
     wrapper.appendChild(ul);
 
     const pager = this.range.getDocument().createElement("div");
     pager.className = "pager";
-    pager.innerHTML = "<span id='webime-previous'>&lt;</span><span id='webime-shift'>Shift +</span><span id='webime-next'>&gt;</span>";
+    pager.innerHTML =
+      "<span id='webime-previous'>&lt;</span><span id='webime-shift'>Shift +</span><span id='webime-next'>&gt;</span>";
     wrapper.appendChild(pager);
 
     if (this.menuContainer) {
@@ -318,7 +325,7 @@ class Tribute {
       this.current.mentionText = "";
     }
 
-    const processValues = values => {
+    const processValues = (values) => {
       // Tribute may not be active any more by the time the value callback returns
       if (!this.isActive) {
         return;
@@ -328,7 +335,7 @@ class Tribute {
         pre: this.current.collection.searchOpts.pre || "<span>",
         post: this.current.collection.searchOpts.post || "</span>",
         skip: this.current.collection.searchOpts.skip,
-        extract: el => {
+        extract: (el) => {
           if (typeof this.current.collection.lookup === "string") {
             return el[this.current.collection.lookup];
           } else if (typeof this.current.collection.lookup === "function") {
@@ -338,7 +345,7 @@ class Tribute {
               "Invalid lookup attribute, lookup must be string or function."
             );
           }
-        }
+        },
       });
 
       if (this.current.collection.menuItemLimit) {
@@ -347,7 +354,7 @@ class Tribute {
 
       const pages = [];
       let page = [],
-          pageItemIndex = 0;
+        pageItemIndex = 0;
       items.forEach((item, index) => {
         page.push(item);
         pageItemIndex++;
@@ -368,7 +375,8 @@ class Tribute {
 
     if (typeof this.current.collection.values === "function") {
       if (this.current.collection.loadingItemTemplate) {
-        this.menu.querySelector("ul").innerHTML = this.current.collection.loadingItemTemplate;
+        this.menu.querySelector("ul").innerHTML =
+          this.current.collection.loadingItemTemplate;
         this.range.positionMenuAtCaret(scrollTo);
       }
 
@@ -378,16 +386,16 @@ class Tribute {
     }
   }
 
-  makeList (items) {
+  makeList(items) {
     this.current.filteredItems = items;
 
-    let ul = this.menu.querySelector("ul");
+    const ul = this.menu.querySelector("ul");
 
     this.range.positionMenuAtCaret(scrollTo);
 
     if (!items.length) {
-      let noMatchEvent = new CustomEvent("tribute-no-match", {
-        detail: this.menu
+      const noMatchEvent = new CustomEvent("tribute-no-match", {
+        detail: this.menu,
       });
       this.current.element.dispatchEvent(noMatchEvent);
       if (
@@ -406,16 +414,16 @@ class Tribute {
     }
 
     ul.innerHTML = "";
-    let fragment = this.range.getDocument().createDocumentFragment();
+    const fragment = this.range.getDocument().createDocumentFragment();
 
     for (let index = 0; index < items.length; index++) {
       const item = items[index];
 
-      let li = this.range.getDocument().createElement("li");
+      const li = this.range.getDocument().createElement("li");
       li.setAttribute("data-index", index);
       li.className = this.current.collection.itemClass;
-      li.addEventListener("mousemove", e => {
-        let [li, index] = this._findLiTarget(e.target);
+      li.addEventListener("mousemove", (e) => {
+        const [li, index] = this._findLiTarget(e.target);
         if (e.movementY !== 0) {
           this.events.setActiveLi(index);
         }
@@ -423,20 +431,23 @@ class Tribute {
       if (this.menuSelected === index) {
         li.classList.add(this.current.collection.selectClass);
       }
-      li.innerHTML = `<div class="index">${index + 1}:</div><div class="suggestion">` + this.current.collection.menuItemTemplate(item) + `</div>`;
+      li.innerHTML =
+        `<div class="index">${index + 1}:</div><div class="suggestion">` +
+        this.current.collection.menuItemTemplate(item) +
+        `</div>`;
       fragment.appendChild(li);
     }
     ul.appendChild(fragment);
   }
 
   // Make current page
-  makePage () {
+  makePage() {
     if (!this.pages[this.currentPage]) {
       return;
     }
     this.makeList(this.pages[this.currentPage]);
 
-    const pager = this.menu.getElementsByClassName("pager")[0]
+    const pager = this.menu.getElementsByClassName("pager")[0];
     const previousButton = pager.querySelector("#webime-previous");
     const nextButton = pager.querySelector("#webime-next");
 
@@ -460,14 +471,14 @@ class Tribute {
   }
 
   previousPage() {
-    if (this.currentPage-1 >= 0) {
+    if (this.currentPage - 1 >= 0) {
       this.currentPage--;
       this.makePage();
     }
   }
 
   nextPage() {
-    if (this.pages.length > this.currentPage+1) {
+    if (this.pages.length > this.currentPage + 1) {
       this.currentPage++;
       this.makePage();
     }
@@ -479,7 +490,7 @@ class Tribute {
     return !index ? this._findLiTarget(el.parentNode) : [el, index];
   }
 
-  showMenuForCollection(element, collectionIndex) {
+  showMenuForCollection(element: Element, collectionIndex?: number): void {
     if (element !== document.activeElement) {
       this.placeCaretAtEnd(element);
     }
@@ -502,14 +513,14 @@ class Tribute {
       typeof window.getSelection != "undefined" &&
       typeof document.createRange != "undefined"
     ) {
-      var range = document.createRange();
+      const range = document.createRange();
       range.selectNodeContents(el);
       range.collapse(false);
-      var sel = window.getSelection();
+      const sel = window.getSelection();
       sel.removeAllRanges();
       sel.addRange(range);
     } else if (typeof document.body.createTextRange != "undefined") {
-      var textRange = document.body.createTextRange();
+      const textRange = document.body.createTextRange();
       textRange.moveToElementText(el);
       textRange.collapse(false);
       textRange.select();
@@ -518,11 +529,11 @@ class Tribute {
 
   // for contenteditable
   insertTextAtCursor(text) {
-    var sel, range, html;
+    let sel, range, html;
     sel = window.getSelection();
     range = sel.getRangeAt(0);
     range.deleteContents();
-    var textNode = document.createTextNode(text);
+    const textNode = document.createTextNode(text);
     range.insertNode(textNode);
     range.selectNodeContents(textNode);
     range.collapse(false);
@@ -532,11 +543,11 @@ class Tribute {
 
   // for regular inputs
   insertAtCaret(textarea, text) {
-    var scrollPos = textarea.scrollTop;
-    var caretPos = textarea.selectionStart;
+    const scrollPos = textarea.scrollTop;
+    let caretPos = textarea.selectionStart;
 
-    var front = textarea.value.substring(0, caretPos);
-    var back = textarea.value.substring(
+    const front = textarea.value.substring(0, caretPos);
+    const back = textarea.value.substring(
       textarea.selectionEnd,
       textarea.value.length
     );
@@ -562,7 +573,7 @@ class Tribute {
   selectItemAtIndex(index, originalEvent) {
     index = parseInt(index);
     if (typeof index !== "number" || isNaN(index)) return;
-    let item = this.current.filteredItems[index];
+    const item = this.current.filteredItems[index];
     let content = this.current.collection.selectTemplate(item);
 
     if (originalEvent.spaceSelection) {
@@ -588,17 +599,21 @@ class Tribute {
     }
   }
 
-  append(collectionIndex, newValues, replace) {
-    let index = parseInt(collectionIndex);
+  append(
+    collectionIndex: number,
+    newValues: Array<T>,
+    replace?: boolean
+  ): void {
+    const index = parseInt(collectionIndex);
     if (typeof index !== "number")
       throw new Error("please provide an index for the collection to update.");
 
-    let collection = this.collection[index];
+    const collection = this.collection[index];
 
     this._append(collection, newValues, replace);
   }
 
-  appendCurrent(newValues, replace) {
+  appendCurrent(newValues: Array<T>, replace?: boolean): void {
     if (this.isActive) {
       this._append(this.current.collection, newValues, replace);
     } else {
@@ -608,7 +623,7 @@ class Tribute {
     }
   }
 
-  detach(el) {
+  detach(el: TributeElement): void {
     if (!el) {
       throw new Error("[Tribute] Must pass in a DOM node or NodeList.");
     }
@@ -624,8 +639,8 @@ class Tribute {
       el.constructor === HTMLCollection ||
       el.constructor === Array
     ) {
-      let length = el.length;
-      for (var i = 0; i < length; ++i) {
+      const length = el.length;
+      for (let i = 0; i < length; ++i) {
         this._detach(el[i]);
       }
     } else {
@@ -649,4 +664,4 @@ class Tribute {
   }
 }
 
-export default Tribute;
+export default WebIME;
